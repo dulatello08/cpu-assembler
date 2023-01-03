@@ -52,12 +52,38 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Read the input file into a string
-    char input[1024];
-    fgets(input, 1024, input_file);
+    // declare an array of strings to store the lines of the file
+    char** lines = NULL;
+    int num_lines = 0;
+
+    // read each line of the file
+    char line[10];
+    while (fgets(line, 10, input_file) != NULL) {
+        // allocate memory for the new string
+        lines = realloc(lines, sizeof(char*) * (num_lines + 1));
+        lines[num_lines] = malloc(sizeof(char) * (strlen(line) + 1));
+
+        // copy the line into the array
+        strcpy(lines[num_lines], line);
+        num_lines++;
+    }
 
     // Lex the input
-    Token* tokens = lex(input);
+    Token* tokens = malloc(sizeof(Token));
+    int num_tokens = 0;
+    for (int i = 0; i < num_lines; i++) {
+        Token* line_tokens = lex(lines[i]);
+        int num_line_tokens = 0;
+        while (line_tokens[num_line_tokens].type != -1) {
+            num_line_tokens++;
+        }
+        tokens = realloc(tokens, sizeof(Token) * (num_tokens + num_line_tokens + 1));
+        for (int j = 0; j < num_line_tokens; j++) {
+            tokens[num_tokens + j] = line_tokens[j];
+        }
+        num_tokens += num_line_tokens;
+        free(line_tokens);
+    }
 
     // Parse the tokens
     Instruction* instructions = parse(tokens);
