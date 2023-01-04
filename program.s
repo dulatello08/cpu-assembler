@@ -1,6 +1,5 @@
 STO &B #0
-STO &A, #0
-ADD &A, #A
+ADD &A, #9
 SUB &A, #5
 PSH &A, #0
 HLT &A, #0

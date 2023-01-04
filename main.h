@@ -30,10 +30,10 @@ typedef struct Instruction {
 
 // Function prototypes
 Token* lex(const char* input);
-Instruction* parse(const Token* tokens);
+void parse(Instruction *instruction, const Token* tokens);
 
 uint8_t get_opcode(const char* instruction);
 uint8_t get_operand(const char* operand);
-uint16_t* generate_code(Instruction** instructions);
+uint16_t* generate_code(Instruction* instructions, uint16_t instruction_count);
 void write_code(uint16_t* code, int16_t code_len, const char* filename);
 uint16_t* get_code_len(Instruction** instructions);

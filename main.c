@@ -17,6 +17,9 @@ void write_code(uint16_t* code, int16_t code_len, const char* filename) {
         return;
     }
     *code = htobe16(*code);
+    for (int i = 0; i < code_len; i++) {
+        printf("Code[%d]: %04hx\n", i, code[i]);
+    }
     // Write the machine code to the file
     size_t bytes_written = fwrite(code, sizeof(uint16_t), code_len, file);
     if (bytes_written != (size_t)code_len) {
@@ -82,17 +85,20 @@ int main(int argc, char* argv[]) {
     }
 
     // Parse the tokens
-    Instruction (*instructions)[2];
-    instructions = malloc(sizeof(instructions));
-    Instruction result[2];
-    for (int i = 0; i < tokenLen; i++) {
-        instructions = realloc(instructions, sizeof(Instruction[2])*i);
-        result = parse(tokens[i]);
-
+    Instruction *instructions;
+    instructions = malloc(sizeof(Instruction) * tokenLen);
+    if (instructions == NULL) {
+        // allocation failed
+        return -1;
+    }
+    uint16_t instruction_count = 0;
+    while (instruction_count < tokenLen) {
+        parse(&instructions[instruction_count], tokens[instruction_count]);
+        instruction_count++;
     }
     // Generate machine code
 
-    uint16_t* code = generate_code(instructions);
+    uint16_t* code = generate_code(instructions, instruction_count);
     //uint16_t* code_len = get_code_len(instructions);
 
     // Write the machine code to the output file
@@ -104,7 +110,7 @@ int main(int argc, char* argv[]) {
         write_code(code, 255, "program.m");
     }
     free(code);
-
+    free(lines);
     // Clean up
     free(tokens);
     free(instructions);

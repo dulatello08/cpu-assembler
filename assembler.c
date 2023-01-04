@@ -151,16 +151,17 @@ Token* lex(const char* input) {
 }
 
 // Function to parse the tokens into a list of instructions
-Instruction[2] parse(const Token* tokens) {
+void parse(Instruction *instructions, const Token* tokens) {
     // Allocate memory for the instruction array
-    if (tokens[i].type == 1) {
+    //instructions = realloc(instructions, sizeof(Instruction*)*2);
+    if (tokens[0].type == 1) {
 
         // Get the opcode for the instruction
-        instructions[0].opcode = get_opcode(tokens[i].value);
+        instructions->opcode = get_opcode(tokens[0].value);
 
         // Initialize the operands to default values
-        instructions[0].operand1 = get_operand(tokens[i+1].value);
-        instructions[0].operand2 = get_operand(tokens[i+2].value);
+        instructions->operand1 = get_operand(tokens[1].value);
+        instructions->operand2 = get_operand(tokens[2].value);
         /*// Check for an operand
         if (tokens[i + 1].type == 2 || tokens[i + 1].type == 3) {
             instructions[instruction_count].operand1 = 1;
@@ -171,36 +172,27 @@ Instruction[2] parse(const Token* tokens) {
         }*/
     } else {
         printf("Invalid token\n");
-        return NULL;
+        return;
     }
-    instructions[1].opcode = SENTINEL_VALUE;
-    return instructions;
 }
 
 // Function to generate machine code from the instructions
-uint16_t* generate_code(Instruction** instructions) {
+uint16_t* generate_code(Instruction* instructions, uint16_t instruction_count) {
     // Allocate memory for the machine code array
     uint16_t* code = malloc(sizeof(uint16_t) * 255);
     memset(code, 0, 255);
     int16_t code_len = 0;
 
     // Generate the machine code for each instruction
-    int i = 0;
-    int j = 0;
-    while (i < (int)sizeof(&instructions)/(int)sizeof(instructions[0])) {
-        while (instructions[i][j].opcode != SENTINEL_VALUE) {
-            // Pack the opcode, operand1, and operand2 fields into a single 16-bit word
-            uint16_t instruction_word = instructions[i][j].opcode;
-            instruction_word |= (instructions[i][j].operand1 << 7);
-            instruction_word |= (instructions[i][j].operand2 << 8);
+    while (code_len < instruction_count) {
+        // Pack the opcode, operand1, and operand2 fields into a single 16-bit word
+        uint16_t instruction_word = instructions[code_len].opcode;
+        instruction_word |= (instructions[code_len].operand1 << 7);
+        instruction_word |= (instructions[code_len].operand2 << 8);
 
-            // Write the instruction word to the machine code array
-            code[code_len] = instruction_word;
-            code_len++;
-
-            j++;
-        }
-        i++;
+        // Write the instruction word to the machine code array
+        code[code_len] = instruction_word;
+        code_len++;
     }
 
     // Return the machine code array
