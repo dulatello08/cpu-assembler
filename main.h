@@ -34,6 +34,6 @@ Instruction* parse(const Token* tokens);
 
 uint8_t get_opcode(const char* instruction);
 uint8_t get_operand(const char* operand);
-uint16_t* generate_code(const Instruction* instructions);
+uint16_t* generate_code(Instruction** instructions);
 void write_code(uint16_t* code, int16_t code_len, const char* filename);
-int16_t get_code_len(Instruction* instructions);
+uint16_t* get_code_len(Instruction** instructions);

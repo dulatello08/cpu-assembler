@@ -28,16 +28,20 @@ void write_code(uint16_t* code, int16_t code_len, const char* filename) {
 }
 
 // Function to get the length of the machine code array
-int16_t get_code_len(Instruction* instructions) {
-    int16_t code_len = 0;
-    int i = 0;
-    while (instructions[i].opcode != SENTINEL_VALUE) {
-        code_len++;
+/*uint16_t* get_code_len(Instruction** instructions) {
+    uint16_t* code_len = malloc(sizeof(uint16_t));
+    int i, j = 0;
+    while (i<(int)sizeof(*instructions)/(int)sizeof(instructions[0])) {
+        while (instructions[i][j].opcode != SENTINEL_VALUE) {
+            code_len = realloc(code_len, sizeof(uint16_t)*(i+1));
+            code_len[i]++;
+            j++;
+        }
         i++;
     }
     return code_len;
 }
-
+*/
 int main(int argc, char* argv[]) {
     // Check for correct number of arguments
     if (argc != 3 && argc != 2) {
@@ -57,8 +61,8 @@ int main(int argc, char* argv[]) {
     int num_lines = 0;
 
     // read each line of the file
-    char line[10];
-    while (fgets(line, 10, input_file) != NULL) {
+    char line[1024];
+    while (fgets(line, 1024, input_file) != NULL) {
         // allocate memory for the new string
         lines = realloc(lines, sizeof(char*) * (num_lines + 1));
         lines[num_lines] = malloc(sizeof(char) * (strlen(line) + 1));
@@ -69,36 +73,35 @@ int main(int argc, char* argv[]) {
     }
 
     // Lex the input
-    Token* tokens = malloc(sizeof(Token));
-    int num_tokens = 0;
+    Token** tokens = malloc(sizeof(Token));
+    int tokenLen = 0;
     for (int i = 0; i < num_lines; i++) {
-        Token* line_tokens = lex(lines[i]);
-        int num_line_tokens = 0;
-        while (line_tokens[num_line_tokens].type != -1) {
-            num_line_tokens++;
-        }
-        tokens = realloc(tokens, sizeof(Token) * (num_tokens + num_line_tokens + 1));
-        for (int j = 0; j < num_line_tokens; j++) {
-            tokens[num_tokens + j] = line_tokens[j];
-        }
-        num_tokens += num_line_tokens;
-        free(line_tokens);
+        tokenLen++;
+        tokens = realloc(tokens, sizeof(Token)*(i+1));
+        tokens[i] = lex(lines[i]);
     }
 
     // Parse the tokens
-    Instruction* instructions = parse(tokens);
+    Instruction (*instructions)[2];
+    instructions = malloc(sizeof(instructions));
+    Instruction result[2];
+    for (int i = 0; i < tokenLen; i++) {
+        instructions = realloc(instructions, sizeof(Instruction[2])*i);
+        result = parse(tokens[i]);
+
+    }
     // Generate machine code
 
     uint16_t* code = generate_code(instructions);
-    int16_t code_len = get_code_len(instructions);
+    //uint16_t* code_len = get_code_len(instructions);
 
     // Write the machine code to the output file
     if (argc == 3) {
         // Use the output file specified by the user
-        write_code(code, code_len, argv[2]);
+        write_code(code, 255, argv[2]);
     } else {
         // Use the default output file
-        write_code(code, code_len, "program.m");
+        write_code(code, 255, "program.m");
     }
     free(code);
 
