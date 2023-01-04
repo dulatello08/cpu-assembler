@@ -6,13 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <endian.h>
-
-void reverse_endianness(uint16_t* values, size_t num_values) {
-    for (size_t i = 0; i < num_values; i++) {
-        values[i] = (values[i] << 8) | (values[i] >> 8);
-    }
-}
+#include <arpa/inet.h>
 
 // Function to write the machine code to a file
 void write_code(uint16_t* code, int16_t code_len, const char* filename) {
@@ -22,9 +16,7 @@ void write_code(uint16_t* code, int16_t code_len, const char* filename) {
         perror("Error opening file");
         return;
     }
-    reverse_endianness(code, (size_t)code_len);
-    *code = htobe16(*code);
-    reverse_endianness(code, (size_t)code_len);
+    *code = htons(*code);
     for (int i = 0; i < code_len; i++) {
         printf("Code[%d]: %04hx\n", i, code[i]);
     }

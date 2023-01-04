@@ -55,7 +55,7 @@ uint8_t get_operand(const char* operand) {
     }
 
     // If the operand is not a register, it must be an immediate value
-    return (uint8_t) strtol(operand, NULL, 16);
+    return (uint16_t) strtol(operand, NULL, 2);
 }
 
 // Function to lex the input string into a list of tokens

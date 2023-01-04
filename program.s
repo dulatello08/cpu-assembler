@@ -1,4 +1,10 @@
-ADD &A, #9
-SUB &A, #5
-PSH &A, #0
-HLT &A, #0
+NOP &A #0
+STO &A #1
+STO &B #1
+STM &B #0
+ADD &A #0
+PSH &A #0
+STM &A #1
+LDM &B #1
+BRO &A #3
+HLT &A #0
