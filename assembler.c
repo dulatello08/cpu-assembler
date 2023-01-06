@@ -22,24 +22,36 @@ uint8_t get_opcode(const char* instruction) {
         return 0x05;
     } else if (strcmp(instruction, "SBM") == 0) {
         return 0x06;
-    } else if (strcmp(instruction, "STO") == 0) {
+    } else if (strcmp(instruction, "ASR") == 0) {
         return 0x07;
-    } else if (strcmp(instruction, "STM") == 0) {
+    } else if (strcmp(instruction, "ADR") == 0) {
         return 0x08;
-    } else if (strcmp(instruction, "LDM") == 0) {
+    } else if (strcmp(instruction, "SBR") == 0) {
         return 0x09;
-    } else if (strcmp(instruction, "PSH") == 0) {
+    } else if (strcmp(instruction, "MLM") == 0) {
         return 0x0A;
-    } else if (strcmp(instruction, "POP") == 0) {
+    } else if (strcmp(instruction, "MLR") == 0) {
         return 0x0B;
-    } else if (strcmp(instruction, "BRN") == 0) {
+    } else if (strcmp(instruction, "STO") == 0) {
         return 0x0C;
-    } else if (strcmp(instruction, "BRZ") == 0) {
+    } else if (strcmp(instruction, "STM") == 0) {
         return 0x0D;
-    } else if (strcmp(instruction, "BRO") == 0) {
+    } else if (strcmp(instruction, "LDM") == 0) {
         return 0x0E;
-    } else if (strcmp(instruction, "HLT") == 0) {
+    } else if (strcmp(instruction, "PSH") == 0) {
         return 0x0F;
+    } else if (strcmp(instruction, "POP") == 0) {
+        return 0x10;
+    } else if (strcmp(instruction, "BRN") == 0) {
+        return 0x11;
+    } else if (strcmp(instruction, "BRZ") == 0) {
+        return 0x12;
+    } else if (strcmp(instruction, "BRO") == 0) {
+        return 0x13;
+    } else if (strcmp(instruction, "BRR") == 0) {
+        return 0x14;
+    } else if (strcmp(instruction, "HLT") == 0) {
+        return 0x15;
     } else {
         printf("Invalid instruction\n");
         return SENTINEL_VALUE;
@@ -160,16 +172,22 @@ void parse(Instruction *instructions, const Token* tokens) {
         instructions->opcode = get_opcode(tokens[0].value);
 
         // Initialize the operands to default values
-        instructions->operand1 = get_operand(tokens[1].value);
-        instructions->operand2 = get_operand(tokens[2].value);
-        /*// Check for an operand
-        if (tokens[i + 1].type == 2 || tokens[i + 1].type == 3) {
-            instructions[instruction_count].operand1 = 1;
-            instructions[instruction_count].operand2 = get_operand(tokens[i + 1].value);
-            i += 2;
+        //instructions->operand1 = get_operand(tokens[1].value);
+        //instructions->operand2 = get_operand(tokens[2].value);
+        // Check for an operand
+        if (tokens[1].type == 2 && tokens[2].type == 3) {
+            instructions->operand1 = get_operand(tokens[1].value);
+            instructions->operand2 = get_operand(tokens[2].value);
+        } else if (tokens[1].type == 2) {
+            instructions->operand1 = get_operand(tokens[1].value);
+            instructions->operand2 = 0;
+        } else if (tokens[1].type == 3) {
+            instructions->operand1 = 0;
+            instructions->operand2 = get_operand(tokens[1].value);
         } else {
-            i++;
-        }*/
+            instructions->operand1 = 0;
+            instructions->operand2 = 0;
+        }
     } else {
         printf("Invalid token\n");
         return;
