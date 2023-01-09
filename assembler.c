@@ -2,6 +2,7 @@
 // Created by ducat on 1/1/23.
 //
 #include "main.h"
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -16,42 +17,46 @@ uint8_t get_opcode(const char* instruction) {
         return 0x02;
     } else if (strcmp(instruction, "MUL") == 0) {
         return 0x03;
-    } else if (strcmp(instruction, "CLZ") == 0) {
-        return 0x04;
     } else if (strcmp(instruction, "ADM") == 0) {
-        return 0x05;
+        return 0x04;
     } else if (strcmp(instruction, "SBM") == 0) {
-        return 0x06;
-    } else if (strcmp(instruction, "ASR") == 0) {
-        return 0x07;
-    } else if (strcmp(instruction, "ADR") == 0) {
-        return 0x08;
-    } else if (strcmp(instruction, "SBR") == 0) {
-        return 0x09;
+        return 0x05;
     } else if (strcmp(instruction, "MLM") == 0) {
-        return 0x0A;
+        return 0x06;
+    } else if (strcmp(instruction, "ADR") == 0) {
+        return 0x07;
+    } else if (strcmp(instruction, "SBR") == 0) {
+        return 0x08;
     } else if (strcmp(instruction, "MLR") == 0) {
-        return 0x0B;
+        return 0x09;
+    } else if (strcmp(instruction, "CLZ") == 0) {
+        return 0x0A;
     } else if (strcmp(instruction, "STO") == 0) {
-        return 0x0C;
+        return 0x0B;
     } else if (strcmp(instruction, "STM") == 0) {
-        return 0x0D;
+        return 0x0C;
     } else if (strcmp(instruction, "LDM") == 0) {
-        return 0x0E;
+        return 0x0D;
     } else if (strcmp(instruction, "PSH") == 0) {
-        return 0x0F;
+        return 0x0E;
     } else if (strcmp(instruction, "POP") == 0) {
+        return 0x0F;
+    } else if (strcmp(instruction, "PRT") == 0) {
         return 0x10;
-    } else if (strcmp(instruction, "BRN") == 0) {
+    } else if (strcmp(instruction, "RDM") == 0) {
         return 0x11;
-    } else if (strcmp(instruction, "BRZ") == 0) {
+    } else if (strcmp(instruction, "RNM") == 0) {
         return 0x12;
-    } else if (strcmp(instruction, "BRO") == 0) {
+    } else if (strcmp(instruction, "BRN") == 0) {
         return 0x13;
-    } else if (strcmp(instruction, "BRR") == 0) {
+    } else if (strcmp(instruction, "BRZ") == 0) {
         return 0x14;
-    } else if (strcmp(instruction, "HLT") == 0) {
+    } else if (strcmp(instruction, "BRO") == 0) {
         return 0x15;
+    } else if (strcmp(instruction, "BRR") == 0) {
+        return 0x16;
+    } else if (strcmp(instruction, "HLT") == 0) {
+        return 0x17;
     } else {
         printf("Invalid instruction\n");
         return SENTINEL_VALUE;
@@ -93,6 +98,7 @@ Token* lex(const char* input) {
             }
             continue;
         }
+
         // Check for an instruction or directive
         if (isalpha(input[i])) {
             // Allocate memory for the new token
@@ -147,6 +153,20 @@ Token* lex(const char* input) {
             token_count++;
             continue;
         }
+        // Check for labels
+        if (input[i] == '.') {
+            tokens = realloc(tokens, sizeof(Token) * (token_count + 1));
+            int j = 0;
+            while (input[i] != '\n' && input[i] != '\0' && i < 1024) {
+                tokens[token_count].value[j] = input[i];
+                i++;
+                j++;
+            }
+            tokens[token_count].value[j] = '\0';
+            tokens[token_count].type = 4; // Set the token type to 4 for labels
+            token_count++;
+            continue;
+        }
 
         // If none of the above cases are true, the input is invalid
         printf("Invalid input at line: \n");
@@ -163,18 +183,28 @@ Token* lex(const char* input) {
 }
 
 // Function to parse the tokens into a list of instructions
-void parse(Instruction *instructions, const Token* tokens) {
+void parse(Instruction *instructions, Token* tokens, uint8_t current_token, Labels *label_addresses) {
     // Allocate memory for the instruction array
     //instructions = realloc(instructions, sizeof(Instruction*)*2);
     if (tokens[0].type == 1) {
 
-        // Get the opcode for the instruction
-        instructions->opcode = get_opcode(tokens[0].value);
+        // Get the opcode for the instruction or label
+        if(tokens[0].type == 1) {
+            instructions->opcode = get_opcode(tokens[0].value);
+        } else if (tokens[0].type == 4) {
+            instructions->opcode = get_opcode("NOP");
+            size_t current_size = sizeof(*label_addresses) / sizeof(label_addresses[0]);
+            label_addresses = realloc(label_addresses, (current_size + 1) * sizeof(uint8_t));
+            struct Labels labels;
+            strncpy(tokens[0].value, labels.label, 9);
+            labels.address = current_token;
+            label_addresses[current_token] = labels;
+        }
 
         // Initialize the operands to default values
         //instructions->operand1 = get_operand(tokens[1].value);
         //instructions->operand2 = get_operand(tokens[2].value);
-        // Check for an operand
+        // Check for operands
         if (tokens[1].type == 2 && tokens[2].type == 3) {
             instructions->operand1 = get_operand(tokens[1].value);
             instructions->operand2 = get_operand(tokens[2].value);
@@ -184,10 +214,18 @@ void parse(Instruction *instructions, const Token* tokens) {
         } else if (tokens[1].type == 3) {
             instructions->operand1 = 0;
             instructions->operand2 = get_operand(tokens[1].value);
+        } else if (tokens[1].type == 4 && ((instructions->opcode == 0x13) || (instructions->opcode == 0x14) || (instructions->opcode == 0x15) || (instructions->opcode == 0x16))) {
+            instructions->operand1 = 0;
+            for(int i = 0; i < sizeof(*label_addresses)/sizeof(label_addresses[0]); i++) {
+                if(strcmp(label_addresses[i].label, tokens[1].value)){
+                    instructions->operand2 = label_addresses[i].address;
+                }
+            }
         } else {
             instructions->operand1 = 0;
             instructions->operand2 = 0;
         }
+        return;
     } else {
         printf("Invalid token\n");
         return;

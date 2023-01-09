@@ -28,9 +28,14 @@ typedef struct Instruction {
     uint8_t operand2;
 } Instruction;
 
+typedef struct Labels {
+    char label[9];
+    uint8_t address;
+} Labels;
+
 // Function prototypes
 Token* lex(const char* input);
-void parse(Instruction *instruction, const Token* tokens);
+void parse(Instruction *instructions, Token* tokens, uint8_t current_token, uint8_t *label_addresses);
 
 uint8_t get_opcode(const char* instruction);
 uint8_t get_operand(const char* operand);
