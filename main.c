@@ -45,6 +45,17 @@ void write_code(uint16_t* code, int16_t code_len, const char* filename) {
     return code_len;
 }
 */
+
+void* realloc_zero(void* pBuffer, size_t oldSize, size_t newSize) {
+  void* pNew = realloc(pBuffer, newSize);
+  if ( newSize > oldSize && pNew ) {
+    size_t diff = newSize - oldSize;
+    void* pStart = ((char*)pNew) + oldSize;
+    memset(pStart, 0, diff);
+  }
+  return pNew;
+}
+
 int main(int argc, char* argv[]) {
     // Check for correct number of arguments
     if (argc != 3 && argc != 2) {
@@ -76,17 +87,17 @@ int main(int argc, char* argv[]) {
     }
 
     // Lex the input
-    Token** tokens = malloc(sizeof(Token));
+    Token** tokens = calloc(1, sizeof(Token));
     int tokenLen = 0;
     for (int i = 0; i < num_lines; i++) {
-        tokenLen++;
-        tokens = realloc(tokens, sizeof(Token)*(i+1));
+        tokens = realloc_zero(tokens, sizeof(Token)*(tokenLen), sizeof(Token)*(tokenLen+1));
         tokens[i] = lex(lines[i]);
+        tokenLen++;
     }
 
     // Parse the tokens
     Instruction *instructions;
-    instructions = malloc(sizeof(Instruction) * tokenLen);
+    instructions = calloc(tokenLen, sizeof(Instruction));
     if (instructions == NULL) {
         // allocation failed
         return -1;

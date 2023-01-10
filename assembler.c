@@ -1,5 +1,5 @@
 //
-// Created by ducat on 1/1/23.
+// Created by dulat on 1/1/23.
 //
 #include "main.h"
 #include <stdint.h>
@@ -131,7 +131,7 @@ Token* lex(const char* input) {
                 j++;
             }
             tokens[token_count].value[j] = '\0';
-            tokens[token_count].type = 2; // Set the token type to 2 for immediate values
+            tokens[token_count].type = 3; // Set the token type to 3 for immediate values
             token_count++;
             continue;
         }
@@ -151,7 +151,7 @@ Token* lex(const char* input) {
             tokens[token_count].value[j] = '\0';*/
             tokens[token_count].value[0] = input[i];
             tokens[token_count].value[1] = '\0';
-            tokens[token_count].type = 3; // Set the token type to 2 for register values
+            tokens[token_count].type = 2; // Set the token type to 2 for register values
             token_count++;
             i++;
             continue;
