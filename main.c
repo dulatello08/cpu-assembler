@@ -92,8 +92,10 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     uint16_t instruction_count = 0;
+    Labels *labels = malloc(sizeof(Labels));
+    size_t current_size = 0;
     while (instruction_count < tokenLen) {
-        parse(&instructions[instruction_count], tokens[instruction_count]);
+        parse(&instructions[instruction_count], tokens[instruction_count], instruction_count, labels, &current_size);
         instruction_count++;
     }
     // Generate machine code

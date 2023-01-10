@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stddef.h>
 
 #define MAX_TOKEN_LEN 9
 #define MAX_INSTRUCTION_LEN 3
@@ -24,18 +25,20 @@ typedef struct Token {
 // Structure to represent an instruction
 typedef struct Instruction {
     uint8_t opcode;
-    bool operand1;
+    bool operand_rd;
+    bool operand_rn;
     uint8_t operand2;
 } Instruction;
 
 typedef struct Labels {
-    char label[9];
+    char label[10];
     uint8_t address;
 } Labels;
 
 // Function prototypes
 Token* lex(const char* input);
-void parse(Instruction *instructions, Token* tokens, uint8_t current_token, uint8_t *label_addresses);
+void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labels *label_addresses,
+           size_t *current_size);
 
 uint8_t get_opcode(const char* instruction);
 uint8_t get_operand(const char* operand);

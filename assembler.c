@@ -65,9 +65,9 @@ uint8_t get_opcode(const char* instruction) {
 
 uint8_t get_operand(const char* operand) {
     // Check if the operand is a register
-    if (operand[0] == 'A') {
+    if (operand[0] == '0') {
         return 0;
-    } else if (operand[0] == 'B') {
+    } else if (operand[0] == '1') {
         return 1;
     }
 
@@ -78,7 +78,7 @@ uint8_t get_operand(const char* operand) {
 // Function to lex the input string into a list of tokens
 Token* lex(const char* input) {
     // Allocate memory for the token array
-    Token* tokens = malloc(sizeof(Token));
+    Token* tokens = calloc(1, sizeof(Token));
     int token_count = 0;
 
     // Read the input character by character
@@ -136,21 +136,24 @@ Token* lex(const char* input) {
             continue;
         }
         // Check for a register
-        if (input[i] == '&') {
+        if (input[i] == '0' || input[i] == '1') {
             // Allocate memory for the new token
             tokens = realloc(tokens, sizeof(Token) * (token_count + 1));
 
             // Read the immediate value into the new token
-            i++;
+            /*
             int j = 0;
-            while (isalpha(input[i]) && j < MAX_TOKEN_LEN) {
+            while ( && j < MAX_TOKEN_LEN) {
                 tokens[token_count].value[j] = input[i];
                 i++;
                 j++;
             }
-            tokens[token_count].value[j] = '\0';
+            tokens[token_count].value[j] = '\0';*/
+            tokens[token_count].value[0] = input[i];
+            tokens[token_count].value[1] = '\0';
             tokens[token_count].type = 3; // Set the token type to 2 for register values
             token_count++;
+            i++;
             continue;
         }
         // Check for labels
@@ -183,49 +186,58 @@ Token* lex(const char* input) {
 }
 
 // Function to parse the tokens into a list of instructions
-void parse(Instruction *instructions, Token* tokens, uint8_t current_token, Labels *label_addresses) {
+void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labels *label_addresses,
+           size_t *current_size) {
     // Allocate memory for the instruction array
     //instructions = realloc(instructions, sizeof(Instruction*)*2);
     if (tokens[0].type == 1) {
 
         // Get the opcode for the instruction or label
-        if(tokens[0].type == 1) {
-            instructions->opcode = get_opcode(tokens[0].value);
-        } else if (tokens[0].type == 4) {
-            instructions->opcode = get_opcode("NOP");
-            size_t current_size = sizeof(*label_addresses) / sizeof(label_addresses[0]);
-            label_addresses = realloc(label_addresses, (current_size + 1) * sizeof(uint8_t));
-            struct Labels labels;
-            strncpy(tokens[0].value, labels.label, 9);
-            labels.address = current_token;
-            label_addresses[current_token] = labels;
-        }
-
+        instructions->opcode = get_opcode(tokens[0].value);
         // Initialize the operands to default values
         //instructions->operand1 = get_operand(tokens[1].value);
         //instructions->operand2 = get_operand(tokens[2].value);
         // Check for operands
-        if (tokens[1].type == 2 && tokens[2].type == 3) {
-            instructions->operand1 = get_operand(tokens[1].value);
+        if (tokens[1].type == 2 && tokens[2].type == 2 && tokens[3].type == 3) {
+            instructions->operand_rd = get_operand(tokens[1].value);
+            instructions->operand_rn = get_operand(tokens[2].value);
+            instructions->operand2 = get_operand(tokens[3].value);
+        } else if (tokens[1].type == 2 && tokens[2].type == 3) {
+            instructions->operand_rd = get_operand(tokens[1].value);
+            instructions->operand_rn = 0;
             instructions->operand2 = get_operand(tokens[2].value);
-        } else if (tokens[1].type == 2) {
-            instructions->operand1 = get_operand(tokens[1].value);
+        } else if (tokens[1].type == 2 && tokens[2].type == 2) {
+            instructions->operand_rd = get_operand(tokens[1].value);
+            instructions->operand_rn = get_operand(tokens[2].value);
             instructions->operand2 = 0;
-        } else if (tokens[1].type == 3) {
-            instructions->operand1 = 0;
-            instructions->operand2 = get_operand(tokens[1].value);
+        } else if (tokens[1].type == 2) {
+            instructions->operand_rd = get_operand(tokens[1].value);
+            instructions->operand_rn = 0;
+            instructions->operand2 = 0;
         } else if (tokens[1].type == 4 && ((instructions->opcode == 0x13) || (instructions->opcode == 0x14) || (instructions->opcode == 0x15) || (instructions->opcode == 0x16))) {
-            instructions->operand1 = 0;
-            for(int i = 0; i < sizeof(*label_addresses)/sizeof(label_addresses[0]); i++) {
-                if(strcmp(label_addresses[i].label, tokens[1].value)){
+            instructions->operand_rd = 0;
+            for(int i = 0; i < (int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0]); i++) {
+                if(strcmp(label_addresses[i].label, tokens[1].value) == 0){
                     instructions->operand2 = label_addresses[i].address;
                 }
             }
         } else {
-            instructions->operand1 = 0;
+            instructions->operand_rd = 0;
+            instructions->operand_rn = 0;
             instructions->operand2 = 0;
         }
         return;
+    } else if (tokens[0].type == 4) {
+        instructions->opcode = get_opcode("NOP");
+        label_addresses = realloc(label_addresses, (*current_size+1) * sizeof(uint8_t));
+        struct Labels labels;
+        strcpy(labels.label, tokens[0].value);
+        labels.address = current_token;
+        label_addresses[current_token] = labels;
+        (*current_size)++;
+        instructions->operand_rd = 0;
+        instructions->operand_rn = 0;
+        instructions->operand2 = 0;
     } else {
         printf("Invalid token\n");
         return;
@@ -243,7 +255,8 @@ uint16_t* generate_code(Instruction* instructions, uint16_t instruction_count) {
     while (code_len < instruction_count) {
         // Pack the opcode, operand1, and operand2 fields into a single 16-bit word
         uint16_t instruction_word = instructions[code_len].opcode;
-        instruction_word |= (instructions[code_len].operand1 << 7);
+        instruction_word |= (instructions[code_len].operand_rd << 6);
+        instruction_word |= (instructions[code_len].operand_rn << 7);
         instruction_word |= (instructions[code_len].operand2 << 8);
 
         // Write the instruction word to the machine code array
