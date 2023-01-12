@@ -1,3 +1,6 @@
+NOP
+NOP
+NOP
 .START
     ADD 0 #1
     PSH 0

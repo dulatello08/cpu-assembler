@@ -233,7 +233,7 @@ void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labe
         struct Labels labels;
         strcpy(labels.label, tokens[0].value);
         labels.address = current_token;
-        label_addresses[current_token] = labels;
+        label_addresses[*current_size] = labels;
         (*current_size)++;
         instructions->operand_rd = 0;
         instructions->operand_rn = 0;
