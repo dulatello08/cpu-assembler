@@ -70,9 +70,9 @@ uint8_t get_operand(const char* operand) {
     } else if (operand[0] == '1') {
         return 1;
     }
-
+    printf("Operand2: %s\n", operand);
     // If the operand is not a register, it must be an immediate value
-    return (uint16_t) strtol(operand, NULL, 2);
+    return (uint16_t) strtol(operand, NULL, 16);
 }
 
 // Function to lex the input string into a list of tokens
@@ -125,7 +125,7 @@ Token* lex(const char* input) {
             // Read the immediate value into the new token
             i++;
             int j = 0;
-            while (isdigit(input[i]) && j < MAX_TOKEN_LEN) {
+            while (isxdigit(input[i]) && j < MAX_TOKEN_LEN) {
                 tokens[token_count].value[j] = input[i];
                 i++;
                 j++;
