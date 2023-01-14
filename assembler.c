@@ -65,9 +65,9 @@ uint8_t get_opcode(const char* instruction) {
 
 uint8_t get_operand(const char* operand) {
     // Check if the operand is a register
-    if (operand[0] == '0') {
+    if (strcmp(operand, "0") == 0) {
         return 0;
-    } else if (operand[0] == '1') {
+    } else if (strcmp(operand, "1") == 0) {
         return 1;
     }
     printf("Operand2: %s\n", operand);

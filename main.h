@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stddef.h>
 
-#define MAX_TOKEN_LEN 9
+#define MAX_TOKEN_LEN 10
 #define MAX_INSTRUCTION_LEN 3
 #define SENTINEL_VALUE 255
 
