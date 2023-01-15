@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stddef.h>
 
-#define MAX_TOKEN_LEN 10
+#define MAX_TOKEN_LEN 16
 #define MAX_INSTRUCTION_LEN 3
 #define SENTINEL_VALUE 255
 
@@ -31,7 +31,7 @@ typedef struct Instruction {
 } Instruction;
 
 typedef struct Labels {
-    char label[10];
+    char label[MAX_TOKEN_LEN];
     uint8_t address;
 } Labels;
 

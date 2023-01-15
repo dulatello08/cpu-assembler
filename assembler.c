@@ -214,10 +214,19 @@ void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labe
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = 0;
             instructions->operand2 = 0;
-        } else if (tokens[1].type == 4 && ((instructions->opcode == 0x13) || (instructions->opcode == 0x14) || (instructions->opcode == 0x15) || (instructions->opcode == 0x16))) {
+        } else if (tokens[1].type == 4 && ((instructions->opcode == 0x13) || (instructions->opcode == 0x14) || (instructions->opcode == 0x15))) {
             instructions->operand_rd = 0;
+            instructions->operand_rn = 0;
             for(int i = 0; i < (int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0]); i++) {
                 if(strcmp(label_addresses[i].label, tokens[1].value) == 0){
+                    instructions->operand2 = label_addresses[i].address;
+                }
+            }
+        } else if (tokens[1].type == 2 && tokens[2].type == 2 && tokens[3].type == 4 && instructions->opcode == 0x16) {
+            instructions->operand_rd = get_operand(tokens[1].value);
+            instructions->operand_rn = get_operand(tokens[2].value);
+            for(int i = 0; i < (int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0]); i++) {
+                if(strcmp(label_addresses[i].label, tokens[3].value) == 0){
                     instructions->operand2 = label_addresses[i].address;
                 }
             }
@@ -229,7 +238,7 @@ void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labe
         return;
     } else if (tokens[0].type == 4) {
         instructions->opcode = get_opcode("NOP");
-        label_addresses = realloc(label_addresses, (*current_size+1) * sizeof(uint8_t));
+        label_addresses = realloc(label_addresses, (*current_size+1) * sizeof(Labels));
         struct Labels labels;
         strcpy(labels.label, tokens[0].value);
         labels.address = current_token;
