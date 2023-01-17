@@ -1,4 +1,4 @@
-STO 1 #01
-.WAIT_FOR_INPUT:
+STO 1 #0
+.WAIT:
     LDM 0 #FE
-    BRR 0 1 .WAIT_FOR_INPUT
+    BRR 0 1 .WAIT
