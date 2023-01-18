@@ -3,3 +3,5 @@ STO 1 #0
     LDM 0 #FE
     BNR 0 1 .WAIT_FOR_INPUT
 NOP ; Nice routine for byte input.
+PSH 0
+HLT
