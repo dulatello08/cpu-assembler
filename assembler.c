@@ -55,8 +55,10 @@ uint8_t get_opcode(const char* instruction) {
         return 0x15;
     } else if (strcmp(instruction, "BRR") == 0) {
         return 0x16;
-    } else if (strcmp(instruction, "HLT") == 0) {
+    } else if (strcmp(instruction, "BNR") == 0) {
         return 0x17;
+    } else if (strcmp(instruction, "HLT") == 0) {
+        return 0x18;
     } else {
         printf("Invalid instruction\n");
         return SENTINEL_VALUE;
@@ -222,7 +224,7 @@ void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labe
                     instructions->operand2 = label_addresses[i].address;
                 }
             }
-        } else if (tokens[1].type == 2 && tokens[2].type == 2 && tokens[3].type == 4 && instructions->opcode == 0x16) {
+        } else if (tokens[1].type == 2 && tokens[2].type == 2 && tokens[3].type == 4 && (instructions->opcode == 0x16 || instructions->opcode == 0x17)) {
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = get_operand(tokens[2].value);
             for(int i = 0; i < (int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0]); i++) {
