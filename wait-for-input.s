@@ -1,7 +1,11 @@
+NOP
 STO 1 #0
-.WAIT_FOR_INPUT:
+.INPUT:
     LDM 0 #FE
-    BNR 0 1 .WAIT_FOR_INPUT
+    BRR 0 1 .INPUT:
 NOP ; Nice routine for byte input.
-PSH 0
+.LOOP:
+    SUB 0 #1
+    PSH 0
+    BRO .LOOP
 HLT

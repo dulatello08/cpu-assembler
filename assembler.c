@@ -220,8 +220,11 @@ void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labe
             instructions->operand_rd = 0;
             instructions->operand_rn = 0;
             for(int i = 0; i < (int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0]); i++) {
-                if(strcmp(label_addresses[i].label, tokens[1].value) == 0){
+                if(strcmp(label_addresses[i].label, tokens[3].value) == 0){
                     instructions->operand2 = label_addresses[i].address;
+                }
+                else if(i==(int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0])-1){
+                    fprintf(stderr, "Error: Label %s not found\n", tokens[3].value);
                 }
             }
         } else if (tokens[1].type == 2 && tokens[2].type == 2 && tokens[3].type == 4 && (instructions->opcode == 0x16 || instructions->opcode == 0x17)) {
@@ -230,6 +233,9 @@ void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labe
             for(int i = 0; i < (int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0]); i++) {
                 if(strcmp(label_addresses[i].label, tokens[3].value) == 0){
                     instructions->operand2 = label_addresses[i].address;
+                }
+                else if(i==(int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0])-1){
+                    fprintf(stderr, "Error: Label %s not found\n", tokens[3].value);
                 }
             }
         } else {
