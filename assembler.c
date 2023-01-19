@@ -3,9 +3,6 @@
 //
 #include "main.h"
 #include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <ctype.h>
 
 uint8_t get_opcode(const char* instruction) {
     printf("%s\n", instruction);
@@ -78,7 +75,7 @@ uint8_t get_operand(const char* operand) {
 }
 
 // Function to lex the input string into a list of tokens
-Token* lex(const char* input) {
+Token* lex(const char* input, uint8_t current_line) {
     // Allocate memory for the token array
     Token* tokens = calloc(1, sizeof(Token));
     int token_count = 0;
@@ -162,7 +159,7 @@ Token* lex(const char* input) {
         if (input[i] == '.') {
             tokens = realloc(tokens, sizeof(Token) * (token_count + 1));
             int j = 0;
-            while (input[i] != '\n' && input[i] != '\0' && i < 1024) {
+            while (isprint(input[i]) && j < MAX_INSTRUCTION_LEN) {
                 tokens[token_count].value[j] = input[i];
                 i++;
                 j++;
@@ -174,8 +171,7 @@ Token* lex(const char* input) {
         }
 
         // If none of the above cases are true, the input is invalid
-        printf("Invalid input at line: \n");
-        printf("%c", input[i]);
+        printf("Invalid input at line: %d\n", current_line);
         return NULL;
     }
 
@@ -216,25 +212,27 @@ void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labe
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = 0;
             instructions->operand2 = 0;
-        } else if (tokens[1].type == 4 && ((instructions->opcode == 0x13) || (instructions->opcode == 0x14) || (instructions->opcode == 0x15))) {
+        } else if (tokens[1].type == 4/* && ((instructions->opcode == 0x13) || (instructions->opcode == 0x14) || (instructions->opcode == 0x15))*/) {
+            printf("Branching to label : %s", tokens[1].value);
             instructions->operand_rd = 0;
             instructions->operand_rn = 0;
             for(int i = 0; i < (int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0]); i++) {
                 if(strcmp(label_addresses[i].label, tokens[3].value) == 0){
                     instructions->operand2 = label_addresses[i].address;
                 }
-                else if(i==(int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0])-1){
+                else {
                     fprintf(stderr, "Error: Label %s not found\n", tokens[3].value);
                 }
             }
-        } else if (tokens[1].type == 2 && tokens[2].type == 2 && tokens[3].type == 4 && (instructions->opcode == 0x16 || instructions->opcode == 0x17)) {
+        } else if (tokens[1].type == 2 && tokens[2].type == 2 && tokens[3].type == 4/* && (instructions->opcode == 0x16 || instructions->opcode == 0x17)*/) {
+            printf("Branching to label : %s", tokens[3].value);
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = get_operand(tokens[2].value);
             for(int i = 0; i < (int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0]); i++) {
                 if(strcmp(label_addresses[i].label, tokens[3].value) == 0){
                     instructions->operand2 = label_addresses[i].address;
                 }
-                else if(i==(int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0])-1){
+                else {
                     fprintf(stderr, "Error: Label %s not found\n", tokens[3].value);
                 }
             }

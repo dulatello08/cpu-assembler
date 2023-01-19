@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -O0 -I. -g
+CFLAGS = -Wall -Wextra -Werror -O0 -I. -g -O0
 
 all: assembler
 

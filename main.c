@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
     int tokenLen = 0;
     for (int i = 0; i < num_lines; i++) {
         tokens = realloc_zero(tokens, sizeof(Token)*(tokenLen), sizeof(Token)*(tokenLen+1));
-        tokens[i] = lex(lines[i]);
+        tokens[i] = lex(lines[i], i);
         tokenLen++;
     }
 
