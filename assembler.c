@@ -69,7 +69,6 @@ uint8_t get_operand(const char* operand) {
     } else if (strcmp(operand, "1") == 0) {
         return 1;
     }
-    printf("Operand2: %s\n", operand);
     // If the operand is not a register, it must be an immediate value
     return (uint16_t) strtol(operand, NULL, 16);
 }
@@ -159,11 +158,12 @@ Token* lex(const char* input, uint8_t current_line) {
         if (input[i] == '.') {
             tokens = realloc(tokens, sizeof(Token) * (token_count + 1));
             int j = 0;
-            while (isprint(input[i]) && j < MAX_INSTRUCTION_LEN) {
+            while (isprint(input[i]) && j < MAX_TOKEN_LEN) {
                 tokens[token_count].value[j] = input[i];
                 i++;
                 j++;
             }
+            printf("Label %s\n", tokens[token_count].value);
             tokens[token_count].value[j] = '\0';
             tokens[token_count].type = 4; // Set the token type to 4 for labels
             token_count++;
@@ -197,18 +197,22 @@ void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labe
         //instructions->operand2 = get_operand(tokens[2].value);
         // Check for operands
         if (tokens[1].type == 2 && tokens[2].type == 2 && tokens[3].type == 3) {
+            //printf("Option 1\n");
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = get_operand(tokens[2].value);
             instructions->operand2 = get_operand(tokens[3].value);
         } else if (tokens[1].type == 2 && tokens[2].type == 3) {
+            //printf("Option 2\n");
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = 0;
             instructions->operand2 = get_operand(tokens[2].value);
-        } else if (tokens[1].type == 2 && tokens[2].type == 2) {
+        } else if (tokens[1].type == 2 && tokens[2].type == 2 && !(tokens[3].type=4)) {
+            //printf("Option 3\n");
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = get_operand(tokens[2].value);
             instructions->operand2 = 0;
-        } else if (tokens[1].type == 2) {
+        } else if (tokens[1].type == 2 && !(tokens[2].type == 2)) {
+            //printf("Option 4\n");
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = 0;
             instructions->operand2 = 0;
