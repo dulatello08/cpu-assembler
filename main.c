@@ -46,16 +46,6 @@ void write_code(uint16_t* code, int16_t code_len, const char* filename) {
 }
 */
 
-void* realloc_zero(void* pBuffer, size_t oldSize, size_t newSize) {
-  void* pNew = realloc(pBuffer, newSize);
-  if ( newSize > oldSize && pNew ) {
-    size_t diff = newSize - oldSize;
-    void* pStart = ((char*)pNew) + oldSize;
-    memset(pStart, 0, diff);
-  }
-  return pNew;
-}
-
 int main(int argc, char* argv[]) {
     // Check for correct number of arguments
     if (argc != 3 && argc != 2) {
@@ -90,7 +80,7 @@ int main(int argc, char* argv[]) {
     Token** tokens = calloc(1, sizeof(Token));
     int tokenLen = 0;
     for (int i = 0; i < num_lines; i++) {
-        tokens = realloc_zero(tokens, sizeof(Token)*(tokenLen), sizeof(Token)*(tokenLen+1));
+        tokens = realloc_zero(tokens, sizeof(Token)*(tokenLen+1));
         tokens[i] = lex(lines[i], i);
         tokenLen++;
     }

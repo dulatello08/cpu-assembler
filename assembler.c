@@ -3,6 +3,23 @@
 //
 #include "main.h"
 #include <stdint.h>
+#include <malloc.h>
+
+void *realloc_zero(void *ptr, size_t new_size) {
+    void *new_ptr = realloc(ptr, new_size);
+    if (new_ptr == NULL) {
+        // Handle allocation error
+        fprintf(stderr, "Error: Failed to reallocate memory\n");
+        exit(1);
+    } else if ((new_size > 0) != 0) {
+        size_t old_size = malloc_usable_size(new_ptr);
+        if (new_size > old_size) {
+            // Zero out newly allocated memory
+            memset(new_ptr + old_size, 0, new_size - old_size);
+        }
+    }
+    return new_ptr;
+}
 
 uint8_t get_opcode(const char* instruction) {
     printf("%s\n", instruction);
@@ -100,7 +117,7 @@ Token* lex(const char* input, uint8_t current_line) {
         // Check for an instruction or directive
         if (isalpha(input[i])) {
             // Allocate memory for the new token
-            tokens = realloc(tokens, sizeof(Token) * (token_count + 1));
+            tokens = realloc_zero(tokens, sizeof(Token) * (token_count + 1));
 
             // Read the instruction or directive into the new token
             int j = 0;
@@ -118,7 +135,7 @@ Token* lex(const char* input, uint8_t current_line) {
         // Check for an immediate value
         if (input[i] == '#') {
             // Allocate memory for the new token
-            tokens = realloc(tokens, sizeof(Token) * (token_count + 1));
+            tokens = realloc_zero(tokens, sizeof(Token) * (token_count + 1));
 
             // Read the immediate value into the new token
             i++;
@@ -136,7 +153,7 @@ Token* lex(const char* input, uint8_t current_line) {
         // Check for a register
         if (input[i] == '0' || input[i] == '1') {
             // Allocate memory for the new token
-            tokens = realloc(tokens, sizeof(Token) * (token_count + 1));
+            tokens = realloc_zero(tokens, sizeof(Token) * (token_count + 1));
 
             // Read the immediate value into the new token
             /*
@@ -156,16 +173,16 @@ Token* lex(const char* input, uint8_t current_line) {
         }
         // Check for labels
         if (input[i] == '.') {
-            tokens = realloc(tokens, sizeof(Token) * (token_count + 1));
+            tokens = realloc_zero(tokens, sizeof(Token) * (token_count + 1));
             int j = 0;
             while (isprint(input[i]) && j < MAX_TOKEN_LEN) {
                 tokens[token_count].value[j] = input[i];
                 i++;
                 j++;
             }
-            printf("Label %s\n", tokens[token_count].value);
             tokens[token_count].value[j] = '\0';
             tokens[token_count].type = 4; // Set the token type to 4 for labels
+            printf("Label %s\n", tokens[token_count].value);
             token_count++;
             continue;
         }
@@ -176,7 +193,7 @@ Token* lex(const char* input, uint8_t current_line) {
     }
 
     // Add a sentinel token to the end of the list
-    tokens = realloc(tokens, sizeof(Token) * (token_count + 1));
+    tokens = realloc_zero(tokens, sizeof(Token) * (token_count + 1));
     tokens[token_count].value[0] = '\0';
     tokens[token_count].type = -1;
 
@@ -211,13 +228,13 @@ void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labe
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = get_operand(tokens[2].value);
             instructions->operand2 = 0;
-        } else if (tokens[1].type == 2 && !(tokens[2].type == 2)) {
+        } else if (tokens[1].type == 2 && tokens[2].type != 2) {
             //printf("Option 4\n");
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = 0;
             instructions->operand2 = 0;
         } else if (tokens[1].type == 4/* && ((instructions->opcode == 0x13) || (instructions->opcode == 0x14) || (instructions->opcode == 0x15))*/) {
-            printf("Branching to label : %s", tokens[1].value);
+            printf("Branching to label : %s\n", tokens[1].value);
             instructions->operand_rd = 0;
             instructions->operand_rn = 0;
             for(int i = 0; i < (int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0]); i++) {
@@ -229,7 +246,7 @@ void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labe
                 }
             }
         } else if (tokens[1].type == 2 && tokens[2].type == 2 && tokens[3].type == 4/* && (instructions->opcode == 0x16 || instructions->opcode == 0x17)*/) {
-            printf("Branching to label : %s", tokens[3].value);
+            printf("Branching to label : %s\n", tokens[3].value);
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = get_operand(tokens[2].value);
             for(int i = 0; i < (int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0]); i++) {
@@ -248,12 +265,13 @@ void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labe
         return;
     } else if (tokens[0].type == 4) {
         instructions->opcode = get_opcode("NOP");
-        label_addresses = realloc(label_addresses, (*current_size+1) * sizeof(Labels));
-        struct Labels labels;
-        strcpy(labels.label, tokens[0].value);
-        labels.address = current_token;
-        label_addresses[*current_size] = labels;
+        label_addresses = realloc_zero(label_addresses, (*current_size+1) * sizeof(Labels));
+        struct Labels *labels = calloc(1, sizeof(Labels));
+        strcpy(labels->label, tokens[0].value);
+        labels->address = current_token;
+        memcpy(&label_addresses[*current_size], labels, sizeof(Labels));
         (*current_size)++;
+        free(labels);
         instructions->operand_rd = 0;
         instructions->operand_rn = 0;
         instructions->operand2 = 0;
