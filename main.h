@@ -20,6 +20,11 @@
 #define MAX_INSTRUCTION_LEN 3
 #define SENTINEL_VALUE 255
 
+#define TYPE_OPCODE 1
+#define TYPE_REGISTER 2
+#define TYPE_OPERAND_2 3
+#define TYPE_LABEL 4
+
 // Structure to represent a token
 typedef struct Token {
     char value[MAX_TOKEN_LEN];
@@ -41,7 +46,7 @@ typedef struct Labels {
 
 // Function prototypes
 Token* lex(const char* input, uint8_t current_token);
-void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labels *label_addresses,
+void parse(Instruction *instructions, const Token *tokens, uint8_t current_token, Labels **label_addresses,
            size_t *current_size);
 
 uint8_t get_opcode(const char* instruction);

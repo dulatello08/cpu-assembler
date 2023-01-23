@@ -90,6 +90,16 @@ uint8_t get_operand(const char* operand) {
     return (uint16_t) strtol(operand, NULL, 16);
 }
 
+ void get_label(Labels **label_addresses, char label[16], uint8_t current_token, uint8_t *current_size) {
+    *label_addresses = realloc_zero(*label_addresses, (*current_size+1) * sizeof(Labels));
+    struct Labels *labels = calloc(1, sizeof(Labels));
+    strcpy(labels->label, label);
+    labels->address = current_token - 1;
+    memcpy(&((*label_addresses)[*current_size]), labels, sizeof(Labels));
+    (*current_size)++;
+    free(labels);
+}
+
 // Function to lex the input string into a list of tokens
 Token* lex(const char* input, uint8_t current_line) {
     // Allocate memory for the token array
@@ -201,80 +211,61 @@ Token* lex(const char* input, uint8_t current_line) {
 }
 
 // Function to parse the tokens into a list of instructions
-void parse(Instruction *instructions, Token *tokens, uint8_t current_token, Labels *label_addresses,
+void parse(Instruction *instructions, const Token *tokens, uint8_t current_token, Labels **label_addresses,
            size_t *current_size) {
-    // Allocate memory for the instruction array
-    //instructions = realloc(instructions, sizeof(Instruction*)*2);
-    if (tokens[0].type == 1) {
+    if (tokens[0].type == TYPE_OPCODE) {
 
         // Get the opcode for the instruction or label
         instructions->opcode = get_opcode(tokens[0].value);
-        // Initialize the operands to default values
-        //instructions->operand1 = get_operand(tokens[1].value);
-        //instructions->operand2 = get_operand(tokens[2].value);
         // Check for operands
-        if (tokens[1].type == 2 && tokens[2].type == 2 && tokens[3].type == 3) {
-            //printf("Option 1\n");
+        if (tokens[1].type == TYPE_REGISTER && tokens[2].type == TYPE_REGISTER && tokens[3].type == TYPE_OPERAND_2) {
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = get_operand(tokens[2].value);
             instructions->operand2 = get_operand(tokens[3].value);
-        } else if (tokens[1].type == 2 && tokens[2].type == 3) {
-            //printf("Option 2\n");
+        } else if (tokens[1].type == TYPE_REGISTER && tokens[2].type == TYPE_OPERAND_2) {
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = 0;
             instructions->operand2 = get_operand(tokens[2].value);
-        } else if (tokens[1].type == 2 && tokens[2].type == 2 && !(tokens[3].type=4)) {
-            //printf("Option 3\n");
+        } else if (tokens[1].type == TYPE_REGISTER && tokens[2].type == TYPE_REGISTER && tokens[3].type != 4) {
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = get_operand(tokens[2].value);
             instructions->operand2 = 0;
-        } else if (tokens[1].type == 2 && tokens[2].type != 2) {
-            //printf("Option 4\n");
+        } else if (tokens[1].type == TYPE_REGISTER && tokens[2].type != 2) {
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = 0;
             instructions->operand2 = 0;
-        } else if (tokens[1].type == 4/* && ((instructions->opcode == 0x13) || (instructions->opcode == 0x14) || (instructions->opcode == 0x15))*/) {
-            printf("Branching to label : %s\n", tokens[1].value);
+        } else if (tokens[1].type == TYPE_LABEL) {
             instructions->operand_rd = 0;
             instructions->operand_rn = 0;
-            for(int i = 0; i < (int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0]); i++) {
-                if(strcmp(label_addresses[i].label, tokens[3].value) == 0){
-                    instructions->operand2 = label_addresses[i].address;
-                }
-                else {
-                    fprintf(stderr, "Error: Label %s not found\n", tokens[3].value);
+            for(int i = 0; i < (int) *current_size; i++) {
+                if(strcmp((*label_addresses)[i].label, tokens[1].value) == 0){
+                    instructions->operand2 = (*label_addresses)[i].address;
+                    return;
                 }
             }
-        } else if (tokens[1].type == 2 && tokens[2].type == 2 && tokens[3].type == 4/* && (instructions->opcode == 0x16 || instructions->opcode == 0x17)*/) {
-            printf("Branching to label : %s\n", tokens[3].value);
+            fprintf(stderr, "Error: Label %s not found\n", tokens[1].value);
+        } else if (tokens[1].type == TYPE_REGISTER && tokens[2].type == TYPE_REGISTER && tokens[3].type == TYPE_LABEL) {
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = get_operand(tokens[2].value);
-            for(int i = 0; i < (int)sizeof(*label_addresses)/(int)sizeof(label_addresses[0]); i++) {
-                if(strcmp(label_addresses[i].label, tokens[3].value) == 0){
-                    instructions->operand2 = label_addresses[i].address;
-                }
-                else {
-                    fprintf(stderr, "Error: Label %s not found\n", tokens[3].value);
+            for(int i = 0; i < (int) *current_size; i++) {
+                if(strcmp((*label_addresses)[i].label, tokens[3].value) == 0){
+                    instructions->operand2 = (*label_addresses)[i].address;
+                    return;
                 }
             }
+            fprintf(stderr, "Error: Label %s not found\n", tokens[3].value);
         } else {
             instructions->operand_rd = 0;
             instructions->operand_rn = 0;
             instructions->operand2 = 0;
         }
         return;
-    } else if (tokens[0].type == 4) {
+    } else if (tokens[0].type == TYPE_LABEL) {
         instructions->opcode = get_opcode("NOP");
-        label_addresses = realloc_zero(label_addresses, (*current_size+1) * sizeof(Labels));
-        struct Labels *labels = calloc(1, sizeof(Labels));
-        strcpy(labels->label, tokens[0].value);
-        labels->address = current_token;
-        memcpy(&label_addresses[*current_size], labels, sizeof(Labels));
-        (*current_size)++;
-        free(labels);
         instructions->operand_rd = 0;
         instructions->operand_rn = 0;
         instructions->operand2 = 0;
+        get_label(label_addresses, (char *) tokens[0].value, current_token, (uint8_t *) current_size);
     } else {
         printf("Invalid token\n");
         return;
