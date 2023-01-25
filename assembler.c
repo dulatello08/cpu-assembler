@@ -73,6 +73,14 @@ uint8_t get_opcode(const char* instruction) {
         return 0x17;
     } else if (strcmp(instruction, "HLT") == 0) {
         return 0x18;
+    } else if (strcmp(instruction, "TSK") == 0) {
+        return 0x19;
+    } else if (strcmp(instruction, "SCH") == 0) {
+        return 0x1A;
+    } else if (strcmp(instruction, "SWT") == 0) {
+        return 0x1B;
+    } else if (strcmp(instruction, "KIL") == 0) {
+        return 0x1C;
     } else {
         printf("Invalid instruction\n");
         return SENTINEL_VALUE;
