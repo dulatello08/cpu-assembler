@@ -2,8 +2,6 @@
 // Created by dulat on 1/1/23.
 //
 #include "main.h"
-#include <stdint.h>
-#include <malloc.h>
 
 void *realloc_zero(void *ptr, size_t new_size) {
     void *new_ptr = realloc(ptr, new_size);

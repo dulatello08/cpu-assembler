@@ -3,10 +3,6 @@
 //
 
 #include "main.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <arpa/inet.h>
 
 // Function to write the machine code to a file
 void write_code(uint16_t* code, int16_t code_len, const char* filename) {
@@ -30,21 +26,6 @@ void write_code(uint16_t* code, int16_t code_len, const char* filename) {
     fclose(file);
 }
 
-// Function to get the length of the machine code array
-/*uint16_t* get_code_len(Instruction** instructions) {
-    uint16_t* code_len = malloc(sizeof(uint16_t));
-    int i, j = 0;
-    while (i<(int)sizeof(*instructions)/(int)sizeof(instructions[0])) {
-        while (instructions[i][j].opcode != SENTINEL_VALUE) {
-            code_len = realloc(code_len, sizeof(uint16_t)*(i+1));
-            code_len[i]++;
-            j++;
-        }
-        i++;
-    }
-    return code_len;
-}
-*/
 
 int main(int argc, char* argv[]) {
     // Check for correct number of arguments
@@ -107,10 +88,10 @@ int main(int argc, char* argv[]) {
     // Write the machine code to the output file
     if (argc == 3) {
         // Use the output file specified by the user
-        write_code(code, 255, argv[2]);
+        write_code(code, PROGRAM_WORDS, argv[2]);
     } else {
         // Use the default output file
-        write_code(code, 255, "program.m");
+        write_code(code, PROGRAM_WORDS, "program.m");
     }
     free(code);
     free(lines);
