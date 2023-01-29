@@ -113,7 +113,7 @@ Token* lex(const char* input, uint8_t current_line) {
     int token_count = 0;
 
     // Read the input character by character
-    volatile int i = 0;
+    int i = 0;
     while (input[i] != '\0' && i < 1024) {
         // Skip over whitespace
         if (input[i] == ' ' || input[i] == '\t' || input[i] == '\n' || input[i] == ',') {
@@ -131,7 +131,7 @@ Token* lex(const char* input, uint8_t current_line) {
         }
 
         // Check for an instruction or directive
-        if (isalpha(input[i])) {
+        if (isupper(input[i])) {
             // Allocate memory for the new token
             tokens = realloc_zero(tokens, sizeof(Token) * (token_count + 1));
 
@@ -167,7 +167,7 @@ Token* lex(const char* input, uint8_t current_line) {
             continue;
         }
         // Check for a register
-        if (input[i] == '0' || input[i] == '1') {
+        if (isxdigit(tolower(input[i]))) {
             // Allocate memory for the new token
             tokens = realloc_zero(tokens, sizeof(Token) * (token_count + 1));
 
