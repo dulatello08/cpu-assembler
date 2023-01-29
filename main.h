@@ -10,11 +10,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <stddef.h>
+#include <malloc.h>
+#include <arpa/inet.h>
 
 #define MAX_TOKEN_LEN 16
 #define MAX_INSTRUCTION_LEN 3
@@ -24,6 +25,7 @@
 #define TYPE_REGISTER 2
 #define TYPE_OPERAND_2 3
 #define TYPE_LABEL 4
+#define PROGRAM_WORDS 256
 
 #define OP_NOP 0x00
 #define OP_ADD 0x01
