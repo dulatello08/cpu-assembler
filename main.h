@@ -55,7 +55,7 @@
 
 // Structure to represent a token
 typedef struct Token {
-    char value[MAX_TOKEN_LEN];
+    char value[MAX_TOKEN_LEN + 1];
     int type;
 } Token;
 
@@ -68,7 +68,7 @@ typedef struct Instruction {
 } Instruction;
 
 typedef struct Labels {
-    char label[MAX_TOKEN_LEN];
+    char label[MAX_TOKEN_LEN + 1];
     uint8_t address;
 } Labels;
 
