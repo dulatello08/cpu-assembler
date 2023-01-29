@@ -234,11 +234,11 @@ void parse(Instruction *instructions, const Token *tokens, uint8_t current_token
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = 0;
             instructions->operand2 = get_operand(tokens[2].value);
-        } else if (tokens[1].type == TYPE_REGISTER && tokens[2].type == TYPE_REGISTER && tokens[3].type != 4) {
+        } else if (tokens[1].type == TYPE_REGISTER && tokens[2].type == TYPE_REGISTER && tokens[3].type != TYPE_LABEL) {
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = get_operand(tokens[2].value);
             instructions->operand2 = 0;
-        } else if (tokens[1].type == TYPE_REGISTER && tokens[2].type != 2) {
+        } else if (tokens[1].type == TYPE_REGISTER && tokens[2].type != TYPE_REGISTER) {
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = 0;
             instructions->operand2 = 0;
@@ -281,25 +281,84 @@ void parse(Instruction *instructions, const Token *tokens, uint8_t current_token
 }
 
 // Function to generate machine code from the instructions
-uint16_t* generate_code(Instruction* instructions, uint16_t instruction_count) {
+uint8_t * generate_code(Instruction* instructions, uint8_t instruction_count) {
     // Allocate memory for the machine code array
-    uint16_t* code = malloc(sizeof(uint16_t) * 255);
+    uint8_t *code = malloc(sizeof(uint8_t) * 255);
     memset(code, 0, 255);
-    int16_t code_len = 0;
-
+    uint8_t code_len = 0;
+    uint8_t i = 0;
     // Generate the machine code for each instruction
     while (code_len < instruction_count) {
-        // Pack the opcode, operand1, and operand2 fields into a single 16-bit word
-        uint16_t instruction_word = instructions[code_len].opcode;
-        instruction_word |= (instructions[code_len].operand_rd << 6);
-        instruction_word |= (instructions[code_len].operand_rn << 7);
-        instruction_word |= (instructions[code_len].operand2 << 8);
-
-        // Write the instruction word to the machine code array
-        code[code_len] = instruction_word;
-        code_len++;
+        // Get all operands and opcode
+        uint8_t opcode = instructions[i].opcode;
+        uint8_t operand1;
+        if(operand1_mode(opcode)==0) {
+            operand1 = (instructions[i].operand_rd << 4) | instructions[i].operand_rn;
+        } else {
+            operand1 = instructions[i].operand2;
+        }
+        uint8_t operand2 = instructions[i].operand2;
+        // Write the instruction words to the machine code array
+        switch (num_ops(instructions[i].opcode)) {
+            case 0:
+                code[code_len] = opcode;
+                break;
+            case 1:
+                code[code_len] = opcode;
+                code[code_len + 1] = operand1;
+            case 2:
+                code[code_len] = opcode;
+                code[code_len + 1] = operand1;
+                code[code_len + 2] = operand2;
+        }
+        code_len += num_ops(instructions[i].opcode);
     }
 
     // Return the machine code array
     return code;
+}
+
+uint8_t num_ops(uint8_t opcode) {
+    switch (opcode) {
+        case OP_NOP:
+        case OP_POP:
+        case OP_PRT:
+        case OP_BRN:
+        case OP_BRZ:
+        case OP_BRO:
+        case OP_ADD:
+        case OP_SUB:
+        case OP_MUL:
+        case OP_STO:
+        case OP_STM:
+        case OP_LDM:
+        case OP_PSH:
+        case OP_CLZ:
+            return 1;
+        case OP_ADM:
+        case OP_SBM:
+        case OP_MLM:
+        case OP_ADR:
+        case OP_SBR:
+        case OP_MLR:
+        case OP_RDM:
+        case OP_RNM:
+        case OP_BRR:
+        case OP_BNR:
+            return 2;
+        case OP_HLT:
+        default:
+            return 0;
+    }
+}
+
+uint8_t operand1_mode(uint8_t opcode) {
+    switch (opcode) {
+        case OP_BRN:
+        case OP_BRO:
+        case OP_BRZ:
+            return 1;
+        default:
+            return 0;
+    }
 }

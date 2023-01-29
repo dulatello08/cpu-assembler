@@ -25,6 +25,32 @@
 #define TYPE_OPERAND_2 3
 #define TYPE_LABEL 4
 
+#define OP_NOP 0x00
+#define OP_ADD 0x01
+#define OP_SUB 0x02
+#define OP_MUL 0x03
+#define OP_ADM 0x04
+#define OP_SBM 0x05
+#define OP_MLM 0x06
+#define OP_ADR 0x07
+#define OP_SBR 0x08
+#define OP_MLR 0x09
+#define OP_CLZ 0x0A
+#define OP_STO 0x0B
+#define OP_STM 0x0C
+#define OP_LDM 0x0D
+#define OP_PSH 0x0E
+#define OP_POP 0x0F
+#define OP_PRT 0x10
+#define OP_RDM 0x11
+#define OP_RNM 0x12
+#define OP_BRN 0x13
+#define OP_BRZ 0x14
+#define OP_BRO 0x15
+#define OP_BRR 0x16
+#define OP_BNR 0x17
+#define OP_HLT 0x18
+
 // Structure to represent a token
 typedef struct Token {
     char value[MAX_TOKEN_LEN];
@@ -51,7 +77,9 @@ void parse(Instruction *instructions, const Token *tokens, uint8_t current_token
 
 uint8_t get_opcode(const char* instruction);
 uint8_t get_operand(const char* operand);
-uint16_t *generate_code(Instruction* instructions, uint16_t instruction_count);
-void write_code(uint16_t* code, int16_t code_len, const char* filename);
-uint16_t *get_code_len(Instruction** instructions);
+uint8_t *generate_code(Instruction* instructions, uint8_t instruction_count);
+void write_code(uint8_t *code, uint16_t code_len, const char* filename);
 void *realloc_zero(void *ptr, size_t new_size);
+
+uint8_t num_ops(uint8_t opcode);
+uint8_t operand1_mode(uint8_t opcode);
