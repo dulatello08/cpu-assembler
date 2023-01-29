@@ -5,7 +5,7 @@
 #include "main.h"
 
 // Function to write the machine code to a file
-void write_code(uint16_t* code, int16_t code_len, const char* filename) {
+void write_code(uint8_t *code, uint16_t code_len, const char* filename) {
     // Open the file for writing
     FILE* file = fopen(filename, "wb");
     if (file == NULL) {

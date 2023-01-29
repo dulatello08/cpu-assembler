@@ -304,10 +304,12 @@ uint8_t * generate_code(Instruction* instructions, uint8_t instruction_count) {
             case 1:
                 code[code_len] = opcode;
                 code[code_len + 1] = operand1;
+                break;
             case 2:
                 code[code_len] = opcode;
                 code[code_len + 1] = operand1;
                 code[code_len + 2] = operand2;
+                break;
         }
         code_len += num_ops(instructions[i].opcode);
     }
