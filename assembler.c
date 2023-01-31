@@ -320,7 +320,11 @@ uint8_t * generate_code(Instruction* instructions, uint8_t instruction_count) {
                 break;
         }
         i++;
-        code_len += num_ops(opcode);
+        if (code_len==0) {
+            code_len += num_ops(opcode);
+        } else {
+            code_len += num_ops(opcode) + 1;
+        }
     }
 
     // Return the machine code array
