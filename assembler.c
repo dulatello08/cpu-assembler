@@ -86,14 +86,8 @@ uint8_t get_opcode(const char* instruction) {
 }
 
 uint8_t get_operand(const char* operand) {
-    // Check if the operand is a register
-    if (strcmp(operand, "0") == 0) {
-        return 0;
-    } else if (strcmp(operand, "1") == 0) {
-        return 1;
-    }
-    // If the operand is not a register, it must be an immediate value
-    return (uint16_t) strtol(operand, NULL, 16);
+    // Operand
+    return (uint8_t) strtol(operand, NULL, 16);
 }
 
  void get_label(Labels **label_addresses, char label[16], uint8_t current_token, uint8_t *current_size) {
@@ -281,12 +275,11 @@ void parse(Instruction *instructions, const Token *tokens, uint8_t current_token
 // Function to generate machine code from the instructions
 uint8_t * generate_code(Instruction* instructions, uint8_t instruction_count) {
     // Allocate memory for the machine code array
-    uint8_t *code = malloc(sizeof(uint8_t) * 255);
-    memset(code, 0, 255);
+    uint8_t *code = calloc(256, sizeof(uint8_t));
     uint8_t code_len = 0;
     uint8_t i = 0;
     // Generate the machine code for each instruction
-    while (code_len < instruction_count) {
+    while (i < instruction_count) {
         // Get all operands and opcode
         uint8_t opcode = instructions[i].opcode;
         uint8_t operand1;
@@ -299,18 +292,34 @@ uint8_t * generate_code(Instruction* instructions, uint8_t instruction_count) {
         // Write the instruction words to the machine code array
         switch (num_ops(instructions[i].opcode)) {
             case 0:
-                code[code_len] = opcode;
+                if (code_len==0) {
+                    code[code_len] = opcode;
+                } else {
+                    code[code_len + 1] = opcode;
+                }
                 break;
             case 1:
-                code[code_len] = opcode;
-                code[code_len + 1] = operand1;
+                if (code_len==0) {
+                    code[code_len] = opcode;
+                    code[code_len + 1] = operand1;
+                } else {
+                    code[code_len + 1] = opcode;
+                    code[code_len + 2] = operand1;
+                }
                 break;
             case 2:
-                code[code_len] = opcode;
-                code[code_len + 1] = operand1;
-                code[code_len + 2] = operand2;
+                if (code_len==0) {
+                    code[code_len] = opcode;
+                    code[code_len + 1] = operand1;
+                    code[code_len + 2] = operand2;
+                } else {
+                    code[code_len + 1] = opcode;
+                    code[code_len + 2] = operand1;
+                    code[code_len + 3] = operand2;
+                }
                 break;
         }
+        i++;
         code_len += num_ops(instructions[i].opcode);
     }
 
@@ -320,21 +329,20 @@ uint8_t * generate_code(Instruction* instructions, uint8_t instruction_count) {
 
 uint8_t num_ops(uint8_t opcode) {
     switch (opcode) {
-        case OP_NOP:
         case OP_POP:
         case OP_PRT:
         case OP_BRN:
         case OP_BRZ:
         case OP_BRO:
+        case OP_PSH:
+        case OP_CLZ:
+            return 1;
         case OP_ADD:
         case OP_SUB:
         case OP_MUL:
         case OP_STO:
         case OP_STM:
         case OP_LDM:
-        case OP_PSH:
-        case OP_CLZ:
-            return 1;
         case OP_ADM:
         case OP_SBM:
         case OP_MLM:
@@ -347,6 +355,7 @@ uint8_t num_ops(uint8_t opcode) {
         case OP_BNR:
             return 2;
         case OP_HLT:
+        case OP_NOP:
         default:
             return 0;
     }

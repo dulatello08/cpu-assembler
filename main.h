@@ -62,8 +62,8 @@ typedef struct Token {
 // Structure to represent an instruction
 typedef struct Instruction {
     uint8_t opcode;
-    bool operand_rd;
-    bool operand_rn;
+    uint8_t operand_rd;
+    uint8_t operand_rn;
     uint8_t operand2;
 } Instruction;
 

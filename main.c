@@ -14,10 +14,10 @@ void write_code(uint8_t *code, uint16_t code_len, const char* filename) {
     }
     *code = htons(*code);
     for (int i = 0; i < code_len; i++) {
-        printf("Code[%d]: %04hx\n", i, code[i]);
+        printf("Code[%d]: %02hx\n", i, code[i]);
     }
     // Write the machine code to the file
-    size_t bytes_written = fwrite(code, sizeof(uint16_t), code_len, file);
+    size_t bytes_written = fwrite(code, sizeof(uint8_t), code_len, file);
     if (bytes_written != (size_t)code_len) {
         perror("Error writing to file");
     }
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
     }
     // Generate machine code
 
-    uint8_t * code = generate_code(instructions, instruction_count);
+    uint8_t *code = generate_code(instructions, instruction_count);
     //uint16_t* code_len = get_code_len(instructions);
 
     // Write the machine code to the output file

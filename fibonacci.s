@@ -1,4 +1,3 @@
-NOP ; Very useful program.
 STO 0 #1
 STO 1 #1
 .LOOP
