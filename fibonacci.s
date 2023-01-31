@@ -5,6 +5,6 @@ STO 1 #1
     STM 0 #1
     ADM 1 1 #1
     LDM 0 #0
-    PSH 0
+    STM 0 #FF
 BRO .LOOP
 HLT
