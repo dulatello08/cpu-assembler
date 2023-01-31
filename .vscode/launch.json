@@ -9,7 +9,7 @@
             "type": "gdb",
             "request": "launch",
             "target": "./assembler",
-            "arguments": "./wait-for-input.s",
+            "arguments": "./fibonacci.s",
             "cwd": "${workspaceRoot}",
             "valuesFormatting": "parseText"
         }
