@@ -12,7 +12,6 @@ void write_code(uint8_t *code, uint16_t code_len, const char* filename) {
         perror("Error opening file");
         return;
     }
-    *code = htons(*code);
     for (int i = 0; i < code_len; i++) {
         printf("Code[%d]: %02hx\n", i, code[i]);
     }
