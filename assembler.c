@@ -90,11 +90,11 @@ uint8_t get_operand(const char* operand) {
     return (uint8_t) strtol(operand, NULL, 16);
 }
 
- void get_label(Labels **label_addresses, char label[16], uint8_t current_token, uint8_t *current_size) {
+void get_label(Labels **label_addresses, char label[MAX_TOKEN_LEN + 1], uint8_t current_token, uint8_t *current_size) {
     *label_addresses = realloc_zero(*label_addresses, (*current_size+1) * sizeof(Labels));
     struct Labels *labels = calloc(1, sizeof(Labels));
     strcpy(labels->label, label);
-    labels->address = current_token - 1;
+    labels->address = current_token;
     memcpy(&((*label_addresses)[*current_size]), labels, sizeof(Labels));
     (*current_size)++;
     free(labels);
@@ -211,7 +211,7 @@ Token* lex(const char* input, uint8_t current_line) {
 }
 
 // Function to parse the tokens into a list of instructions
-void parse(Instruction *instructions, const Token *tokens, uint8_t current_token, Labels **label_addresses,
+void parse(Instruction *instructions, const Token *tokens, uint8_t *current_token, Labels **label_addresses,
            size_t *current_size) {
     if (tokens[0].type == TYPE_OPCODE) {
 
@@ -265,7 +265,7 @@ void parse(Instruction *instructions, const Token *tokens, uint8_t current_token
         instructions->operand_rd = 0;
         instructions->operand_rn = 0;
         instructions->operand2 = 0;
-        get_label(label_addresses, (char *) tokens[0].value, current_token, (uint8_t *) current_size);
+        get_label(label_addresses, (char *) tokens[0].value, *current_token, (uint8_t *) current_size);
     } else {
         printf("Invalid token\n");
         return;

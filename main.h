@@ -74,7 +74,7 @@ typedef struct Labels {
 
 // Function prototypes
 Token* lex(const char* input, uint8_t current_token);
-void parse(Instruction *instructions, const Token *tokens, uint8_t current_token, Labels **label_addresses,
+void parse(Instruction *instructions, const Token *tokens, uint8_t *current_token, Labels **label_addresses,
            size_t *current_size);
 
 uint8_t get_opcode(const char* instruction);

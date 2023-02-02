@@ -1,10 +1,9 @@
-STO 0 #1
-STO 1 #1
+STO 2 #1        ; Initialize 2 to 1
 .LOOP
-    STM 1 #0
-    STM 0 #1
-    ADM 1 1 #1
-    LDM 0 #0
-    STM 0 #FF
-BRO .LOOP
-HLT
+    STM 2 #0
+    ADR 3 1 #0      ; R3 = R1 + R2
+    PSH 2
+    POP 1
+    PSH 3
+    POP 2
+    BRO .LOOP

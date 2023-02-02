@@ -72,11 +72,13 @@ int main(int argc, char* argv[]) {
         // allocation failed
         return -1;
     }
-    uint16_t instruction_count = 0;
     Labels *labels = calloc(1, sizeof(Labels));
     size_t current_size = 0;
+    uint16_t instruction_count = 0;
+    uint8_t current_token = 0;
     while (instruction_count < tokenLen) {
-        parse(&instructions[instruction_count], tokens[instruction_count], instruction_count, &labels, &current_size);
+        parse(&instructions[instruction_count], tokens[instruction_count], &current_token, &labels, &current_size);
+        current_token += num_ops(instructions[instruction_count].opcode) + 1;
         instruction_count++;
     }
     // Generate machine code
