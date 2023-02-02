@@ -1,6 +1,6 @@
-STO 0 #1
-STO 1 #9
-ADR 0 1 #0
+STO A #5
+STO 1 #1
+ADM 1 A #0
 LDM 0 #0
 STM 0 #FF
 HLT
