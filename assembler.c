@@ -87,6 +87,7 @@ uint8_t get_opcode(const char* instruction) {
 
 uint8_t get_operand(const char* operand) {
     // Operand
+    printf("Operand: %s\n", operand);
     return (uint8_t) strtol(operand, NULL, 16);
 }
 

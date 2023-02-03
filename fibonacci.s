@@ -6,4 +6,5 @@ STO 2 #1        ; Initialize 2 to 1
     POP 1
     PSH 3
     POP 2
+    STM 2 #FF
     BRO .LOOP
