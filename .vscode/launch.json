@@ -9,7 +9,7 @@
             "type": "gdb",
             "request": "launch",
             "target": "./assembler",
-            "arguments": "./fibonacci.s",
+            "arguments": "./os-simple.s",
             "cwd": "${workspaceRoot}",
             "valuesFormatting": "parseText"
         }

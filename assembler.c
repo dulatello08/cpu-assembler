@@ -363,8 +363,8 @@ uint8_t num_ops(uint8_t opcode) {
         case OP_TSK:
             return 2;
         case OP_HLT:
-        case OP_NOP:
         case OP_SCH:
+        case OP_NOP:
         default:
             return 0;
     }
