@@ -341,6 +341,8 @@ uint8_t num_ops(uint8_t opcode) {
         case OP_BRO:
         case OP_PSH:
         case OP_CLZ:
+        case OP_SWT:
+        case OP_KIL:
             return 1;
         case OP_ADD:
         case OP_SUB:
@@ -358,9 +360,11 @@ uint8_t num_ops(uint8_t opcode) {
         case OP_RNM:
         case OP_BRR:
         case OP_BNR:
+        case OP_TSK:
             return 2;
         case OP_HLT:
         case OP_NOP:
+        case OP_SCH:
         default:
             return 0;
     }

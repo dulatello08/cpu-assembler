@@ -52,6 +52,10 @@
 #define OP_BRR 0x16
 #define OP_BNR 0x17
 #define OP_HLT 0x18
+#define OP_TSK 0x19
+#define OP_SCH 0x1A
+#define OP_SWT 0x1B
+#define OP_KIL 0x1C
 
 // Structure to represent a token
 typedef struct Token {
