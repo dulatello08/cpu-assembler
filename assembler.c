@@ -308,7 +308,7 @@ uint8_t * generate_code(Instruction* instructions, uint8_t instruction_count) {
                     code[code_len + 2] = operand1;
                 }
                 break;
-            case 2:
+            case 3:
                 if (code_len==0) {
                     code[code_len] = opcode;
                     code[code_len + 1] = operand1;
