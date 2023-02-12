@@ -68,7 +68,7 @@ typedef struct Instruction {
     uint8_t opcode;
     uint8_t operand_rd;
     uint8_t operand_rn;
-    uint8_t operand2;
+    uint16_t operand2;
 } Instruction;
 
 typedef struct Labels {
@@ -78,11 +78,11 @@ typedef struct Labels {
 
 // Function prototypes
 Token* lex(const char* input, uint8_t current_token);
-void parse(Instruction *instructions, const Token *tokens, uint8_t *current_token, Labels **label_addresses,
+void parse(Instruction *instructions, const Token *tokens, const uint8_t *current_token, Labels **label_addresses,
            size_t *current_size);
 
 uint8_t get_opcode(const char* instruction);
-uint8_t get_operand(const char* operand);
+uint16_t get_operand(const char* operand);
 uint8_t *generate_code(Instruction* instructions, uint8_t instruction_count);
 void write_code(uint8_t *code, uint16_t code_len, const char* filename);
 void *realloc_zero(void *ptr, size_t new_size);

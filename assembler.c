@@ -85,10 +85,10 @@ uint8_t get_opcode(const char* instruction) {
     }
 }
 
-uint8_t get_operand(const char* operand) {
+uint16_t get_operand(const char* operand) {
     // Operand
     printf("Operand: %s\n", operand);
-    return (uint8_t) strtol(operand, NULL, 16);
+    return (uint16_t) strtol(operand, NULL, 16);
 }
 
 void get_label(Labels **label_addresses, char label[MAX_TOKEN_LEN + 1], uint8_t current_token, uint8_t *current_size) {
@@ -212,7 +212,7 @@ Token* lex(const char* input, uint8_t current_line) {
 }
 
 // Function to parse the tokens into a list of instructions
-void parse(Instruction *instructions, const Token *tokens, uint8_t *current_token, Labels **label_addresses,
+void parse(Instruction *instructions, const Token *tokens, const uint8_t *current_token, Labels **label_addresses,
            size_t *current_size) {
     if (tokens[0].type == TYPE_OPCODE) {
 
@@ -289,7 +289,7 @@ uint8_t * generate_code(Instruction* instructions, uint8_t instruction_count) {
         } else {
             operand1 = instructions[i].operand2;
         }
-        uint8_t operand2 = instructions[i].operand2;
+        uint16_t operand2 = instructions[i].operand2;
         // Write the instruction words to the machine code array
         switch (num_ops(instructions[i].opcode)) {
             case 0:
@@ -316,7 +316,8 @@ uint8_t * generate_code(Instruction* instructions, uint8_t instruction_count) {
                 } else {
                     code[code_len + 1] = opcode;
                     code[code_len + 2] = operand1;
-                    code[code_len + 3] = operand2;
+                    code[code_len + 3] = operand2 << 8;
+                    code[code_len + 4] = operand2 >> 8;
                 }
                 break;
         }
@@ -361,7 +362,7 @@ uint8_t num_ops(uint8_t opcode) {
         case OP_BRR:
         case OP_BNR:
         case OP_TSK:
-            return 2;
+            return 3;
         case OP_HLT:
         case OP_SCH:
         case OP_NOP:
