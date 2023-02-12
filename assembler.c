@@ -98,7 +98,7 @@ void get_label(Labels **label_addresses, char label[MAX_TOKEN_LEN + 1], uint8_t 
     labels->address = current_token - 1;
     memcpy(&((*label_addresses)[*current_size]), labels, sizeof(Labels));
     (*current_size)++;
-    free(labels);
+    //free(labels);
 }
 
 // Function to lex the input string into a list of tokens

@@ -99,6 +99,6 @@ int main(int argc, char* argv[]) {
     // Clean up
     free(tokens);
     free(instructions);
-        free(labels);
+    free(labels);
     return 0;
 }
