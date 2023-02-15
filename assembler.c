@@ -271,55 +271,68 @@ void parse(Instruction *instructions, const Token *tokens, const uint8_t *curren
 uint8_t * generate_code(Instruction* instructions, uint8_t instruction_count) {
     // Allocate memory for the machine code array
     uint8_t *code = calloc(256, sizeof(uint8_t));
-    uint8_t code_len = 0;
+    uint8_t currentPointer = 0;
     uint8_t i = 0;
     // Generate the machine code for each instruction
     while (i < instruction_count) {
         // Get all operands and opcode
         uint8_t opcode = instructions[i].opcode;
         uint8_t operand1;
+        uint8_t operand2 = instructions[i].operand2;
         if(operand1_mode(opcode)==0) {
             operand1 = (instructions[i].operand_rd << 4) | instructions[i].operand_rn;
         } else {
-            operand1 = instructions[i].operand2;
+            operand1 = ((uint16_t) instructions[i].operand2 & (uint16_t) 0xFF00) >> 8;
+            operand2 = (uint16_t) instructions[i].operand2 & (uint16_t) 0x00FF;
         }
-        uint16_t operand2 = instructions[i].operand2;
         // Write the instruction words to the machine code array
         switch (num_ops(instructions[i].opcode)) {
             case 0:
-                if (code_len==0) {
-                    code[code_len] = opcode;
+                if (currentPointer == 0) {
+                    code[currentPointer] = opcode;
                 } else {
-                    code[code_len + 1] = opcode;
+                    code[currentPointer + 1] = opcode;
                 }
                 break;
             case 1:
-                if (code_len==0) {
-                    code[code_len] = opcode;
-                    code[code_len + 1] = operand1;
+                if (currentPointer == 0) {
+                    code[currentPointer] = opcode;
+                    code[currentPointer + 1] = operand1;
                 } else {
-                    code[code_len + 1] = opcode;
-                    code[code_len + 2] = operand1;
+                    code[currentPointer + 1] = opcode;
+                    code[currentPointer + 2] = operand1;
+                }
+                break;
+            case 2:
+                if (currentPointer == 0) {
+                    code[currentPointer] = opcode;
+                    code[currentPointer + 1] = operand1;
+                    code[currentPointer + 2] = operand2;
+                } else {
+                    code[currentPointer + 1] = opcode;
+                    code[currentPointer + 2] = operand1;
+                    code[currentPointer + 3] = operand2;
                 }
                 break;
             case 3:
-                if (code_len==0) {
-                    code[code_len] = opcode;
-                    code[code_len + 1] = operand1;
-                    code[code_len + 2] = operand2;
+                if (currentPointer == 0) {
+                    code[currentPointer] = opcode;
+                    code[currentPointer + 1] = operand1;
+                    code[currentPointer + 2] = (operand2 & 0xFF00) >> 8;
+                    code[currentPointer + 3] = operand2 & 0x00FF;
                 } else {
-                    code[code_len + 1] = opcode;
-                    code[code_len + 2] = operand1;
-                    code[code_len + 3] = operand2 << 8;
-                    code[code_len + 4] = operand2 >> 8;
+                    code[currentPointer + 1] = opcode;
+                    code[currentPointer + 2] = operand1;
+                    code[currentPointer + 3] = (operand2 & 0xFF00) >> 8;
+                    code[currentPointer + 4] = operand2 & 0x00FF;
                 }
                 break;
         }
         i++;
-        if (code_len==0) {
-            code_len += num_ops(opcode);
+        if (currentPointer == 0) {
+            currentPointer += num_ops(opcode);
         } else {
-            code_len += num_ops(opcode) + 1;
+            currentPointer += num_ops(opcode) + 1;
         }
     }
 
@@ -329,6 +342,11 @@ uint8_t * generate_code(Instruction* instructions, uint8_t instruction_count) {
 
 uint8_t num_ops(uint8_t opcode) {
     switch (opcode) {
+        case OP_NOP:
+        case OP_HLT:
+        case OP_SCH:
+        default:
+            return 0;
         case OP_CLZ:
         case OP_PSH:
         case OP_POP:
@@ -338,6 +356,7 @@ uint8_t num_ops(uint8_t opcode) {
         case OP_ADD:
         case OP_SUB:
         case OP_MUL:
+        case OP_STO:
         case OP_BRN:
         case OP_BRZ:
         case OP_BRO:
@@ -350,16 +369,10 @@ uint8_t num_ops(uint8_t opcode) {
         case OP_MLR:
         case OP_STM:
         case OP_LDM:
-        case OP_STO:
         case OP_BRR:
         case OP_BNR:
         case OP_TSK:
             return 3;
-        case OP_NOP:
-        case OP_HLT:
-        case OP_SCH:
-        default:
-            return 0;
     }
 }
 
