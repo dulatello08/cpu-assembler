@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
     uint8_t current_token = 0;
     while (instruction_count < tokenLen) {
         parse(&instructions[instruction_count], tokens[instruction_count], &current_token, &labels, &current_size);
-        current_token += num_ops(instructions[instruction_count].opcode) + 1;
+        current_token += num_operands(instructions[instruction_count].opcode) + 1;
         instruction_count++;
     }
     // Generate machine code
