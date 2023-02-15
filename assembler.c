@@ -22,63 +22,57 @@ void *realloc_zero(void *ptr, size_t new_size) {
 uint8_t get_opcode(const char* instruction) {
     printf("%s\n", instruction);
     if (strcmp(instruction, "NOP") == 0) {
-        return 0x00;
+        return OP_NOP;
     } else if (strcmp(instruction, "ADD") == 0) {
-        return 0x01;
+        return OP_ADD;
     } else if (strcmp(instruction, "SUB") == 0) {
-        return 0x02;
+        return OP_SUB;
     } else if (strcmp(instruction, "MUL") == 0) {
-        return 0x03;
+        return OP_MUL;
     } else if (strcmp(instruction, "ADM") == 0) {
-        return 0x04;
+        return OP_ADM;
     } else if (strcmp(instruction, "SBM") == 0) {
-        return 0x05;
+        return OP_SBM;
     } else if (strcmp(instruction, "MLM") == 0) {
-        return 0x06;
+        return OP_MLM;
     } else if (strcmp(instruction, "ADR") == 0) {
-        return 0x07;
+        return OP_ADR;
     } else if (strcmp(instruction, "SBR") == 0) {
-        return 0x08;
+        return OP_SBR;
     } else if (strcmp(instruction, "MLR") == 0) {
-        return 0x09;
+        return OP_MLR;
     } else if (strcmp(instruction, "CLZ") == 0) {
-        return 0x0A;
+        return OP_CLZ;
     } else if (strcmp(instruction, "STO") == 0) {
-        return 0x0B;
+        return OP_STO;
     } else if (strcmp(instruction, "STM") == 0) {
-        return 0x0C;
+        return OP_STM;
     } else if (strcmp(instruction, "LDM") == 0) {
-        return 0x0D;
+        return OP_LDM;
     } else if (strcmp(instruction, "PSH") == 0) {
-        return 0x0E;
+        return OP_PSH;
     } else if (strcmp(instruction, "POP") == 0) {
-        return 0x0F;
-    } else if (strcmp(instruction, "PRT") == 0) {
-        return 0x10;
-    } else if (strcmp(instruction, "RDM") == 0) {
-        return 0x11;
-    } else if (strcmp(instruction, "RNM") == 0) {
-        return 0x12;
+        return OP_POP;
     } else if (strcmp(instruction, "BRN") == 0) {
-        return 0x13;
+        return OP_BRN;
     } else if (strcmp(instruction, "BRZ") == 0) {
-        return 0x14;
+        return OP_BRZ;
     } else if (strcmp(instruction, "BRO") == 0) {
-        return 0x15;
+        return OP_BRO;
     } else if (strcmp(instruction, "BRR") == 0) {
-        return 0x16;
+        return OP_BRR;
     } else if (strcmp(instruction, "BNR") == 0) {
-        return 0x17;
+        return OP_BNR;
     } else if (strcmp(instruction, "HLT") == 0) {
-        return 0x18;
+        return OP_HLT;
     } else if (strcmp(instruction, "TSK") == 0) {
-        return 0x19;
+        return OP_TSK;
     } else if (strcmp(instruction, "SCH") == 0) {
-        return 0x1A;
+        return OP_SCH;
     } else if (strcmp(instruction, "SWT") == 0) {
-        return 0x1B;
+        return OP_SWT;
     } else if (strcmp(instruction, "KIL") == 0) {
-        return 0x1C;
+        return OP_KIL;
     } else {
         printf("Invalid instruction\n");
         return SENTINEL_VALUE;
@@ -336,7 +330,6 @@ uint8_t * generate_code(Instruction* instructions, uint8_t instruction_count) {
 uint8_t num_ops(uint8_t opcode) {
     switch (opcode) {
         case OP_POP:
-        case OP_PRT:
         case OP_BRN:
         case OP_BRZ:
         case OP_BRO:
@@ -357,8 +350,6 @@ uint8_t num_ops(uint8_t opcode) {
         case OP_ADR:
         case OP_SBR:
         case OP_MLR:
-        case OP_RDM:
-        case OP_RNM:
         case OP_BRR:
         case OP_BNR:
         case OP_TSK:
