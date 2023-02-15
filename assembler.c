@@ -329,34 +329,35 @@ uint8_t * generate_code(Instruction* instructions, uint8_t instruction_count) {
 
 uint8_t num_ops(uint8_t opcode) {
     switch (opcode) {
-        case OP_POP:
-        case OP_BRN:
-        case OP_BRZ:
-        case OP_BRO:
-        case OP_PSH:
         case OP_CLZ:
+        case OP_PSH:
+        case OP_POP:
         case OP_SWT:
         case OP_KIL:
             return 1;
         case OP_ADD:
         case OP_SUB:
         case OP_MUL:
-        case OP_STO:
-        case OP_STM:
-        case OP_LDM:
+        case OP_BRN:
+        case OP_BRZ:
+        case OP_BRO:
+            return 2;
         case OP_ADM:
         case OP_SBM:
         case OP_MLM:
         case OP_ADR:
         case OP_SBR:
         case OP_MLR:
+        case OP_STM:
+        case OP_LDM:
+        case OP_STO:
         case OP_BRR:
         case OP_BNR:
         case OP_TSK:
             return 3;
+        case OP_NOP:
         case OP_HLT:
         case OP_SCH:
-        case OP_NOP:
         default:
             return 0;
     }

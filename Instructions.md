@@ -30,9 +30,9 @@
 | SWT         | 0x18   | Switch to a specific task, takes argument of task's unique id. Update the task queue accordingly.                                                           | SWT Rd               |
 | KIL         | 0x19   | Kill a specific task, takes argument of task's unique id. Remove the task from the task queue and free the memory allocated for the task.                   | KIL Rd               |
 
-| Uses no additional operand | Uses only register operand(s) | Uses at least one register and memory address | Uses only immediate operand | Uses registers and immediate operand |
-|----------------------------|-------------------------------|-----------------------------------------------|-----------------------------|--------------------------------------|
-| NOP, HLT, SCH              | CLZ, PSH, POP, SWT, KIL       | ADM, SBM, MLM, ADR, SBR, MLR, STM, LDM        | BRN, BRZ, BRO               | ADD, SUB, MUL, STO, BRR, BNR, TSK    |
+| Uses no additional operand | Uses only register operand(s) | Uses at least one register and memory address              | Uses only memory address operand | Uses registers and immediate operand |
+|----------------------------|-------------------------------|------------------------------------------------------------|----------------------------------|--------------------------------------|
+| NOP, HLT, SCH              | CLZ, PSH, POP, SWT, KIL       | ADM, SBM, MLM, ADR, SBR, MLR, STM, LDM, STO, BRR, BNR, TSK | BRN, BRZ, BRO                    | ADD, SUB, MUL                        |
 
 
 # Memory Map
