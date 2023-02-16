@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     Labels *labels = calloc(1, sizeof(Labels));
-    size_t current_size = 0;
+    size_t current_size = 1;
     uint16_t instruction_count = 0;
     uint8_t current_token = 0;
     while (instruction_count < tokenLen) {

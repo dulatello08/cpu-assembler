@@ -85,14 +85,30 @@ uint16_t get_operand(const char* operand) {
     return (uint16_t) strtol(operand, NULL, 16);
 }
 
-void get_label(Labels **label_addresses, char label[MAX_TOKEN_LEN + 1], uint8_t current_token, uint8_t *current_size) {
-    *label_addresses = realloc_zero(*label_addresses, (*current_size+1) * sizeof(Labels));
+void get_label(Labels **label_addresses, const char label[MAX_TOKEN_LEN + 1], const uint8_t current_token, uint8_t *current_size) {
     struct Labels *labels = calloc(1, sizeof(Labels));
+    if (labels == NULL) {
+        return;
+    }
+    if (*label_addresses == NULL) {
+        *label_addresses = calloc(1, sizeof(Labels));
+        if (*label_addresses == NULL) {
+            free(labels);
+            return;
+        }
+    } else {
+        Labels *temp = realloc_zero(*label_addresses, (*current_size + 1) * sizeof(Labels));
+        if (temp == NULL) {
+            free(labels);
+            return;
+        }
+        *label_addresses = temp;
+    }
     strcpy(labels->label, label);
-    labels->address = current_token - 1;
+    labels->address = (current_token == 0) ? 0 : (current_token - 1);
     memcpy(&((*label_addresses)[*current_size]), labels, sizeof(Labels));
     (*current_size)++;
-    //free(labels);
+    free(labels);
 }
 
 // Function to lex the input string into a list of tokens
@@ -299,8 +315,8 @@ uint8_t *generate_code(Instruction *instructions, uint8_t instruction_count) {
             case 3:
                 code[current_pointer++] = opcode;
                 code[current_pointer++] = operand1;
-                code[current_pointer++] = (operand2 & 0xFF00) >> 8;
-                code[current_pointer++] = operand2 & 0x00FF;
+                code[current_pointer++] = (instructions[i].operand2 & 0xFF00) >> 8;
+                code[current_pointer++] = (instructions[i].operand2 & 0x00FF);
                 break;
             default:
                 break;
