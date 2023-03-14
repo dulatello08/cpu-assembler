@@ -1,64 +1,63 @@
 #include "main.h"
 
+static void handle_event(cyaml_event_t event, cyaml_event_info_t *info, void *ctx)
+{
+	switch(event) {
+	case CYAML_EVENT_ENTRY:
+		printf("Entry\n");
+		break;
+	case CYAML_EVENT_EXIT:
+		printf("Exit\n");
+		break;
+	case CYAML_EVENT_STRING:
+		printf("String: %s\n", info->value.string);
+		break;
+	case CYAML_EVENT_INT:
+		printf("Int: %d\n", info->value.integer);
+		break;
+	case CYAML_EVENT_MAP_START:
+		printf("Map start\n");
+		break;
+	case CYAML_EVENT_MAP_END:
+		printf("Map end\n");
+		break;
+	case CYAML_EVENT_SEQ_START:
+		printf("Seq start\n");
+		break;
+	case CYAML_EVENT_SEQ_END:
+		printf("Seq end\n");
+		break;
+	}
+}
+
 int main(int argc, char *argv[])
 {
-	FILE *fh;
-	yaml_parser_t parser;
-	yaml_event_t event;
-	int done = 0;
+	cyaml_err_t err;
+	cyaml_config_t config = {
+		.log_level = CYAML_LOG_WARNING,
+		.log_fn = cyaml_log,
+	};
+	cyaml_context_t ctx;
+	foo_t foo;
 
-	if (argc != 2) {
-		fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+	if (argc != 3) {
+		fprintf(stderr, "Usage: %s <filename> <mode>\n", argv[0]);
 		return 1;
 	}
 
-	fh = fopen(argv[1], "r");
-	if (!fh) {
+	ctx.config = &config;
+	ctx.filename = argv[1];
+	ctx.fh = fopen(argv[1], argv[2]);
+	if (!ctx.fh) {
 		perror("fopen");
 		return 1;
 	}
 
-	yaml_parser_initialize(&parser);
-	yaml_parser_set_input_file(&parser, fh);
+	ctx.state = CYAML_STATE_INIT_PARSE;
 
-	do {
-		if (!yaml_parser_parse(&parser, &event)) {
-			fprintf(stderr, "Parser error %d\n", parser.error);
-			return 1;
-		}
-
-		switch(event.type) {
-		case YAML_NO_EVENT:
-			break;
-		case YAML_STREAM_START_EVENT:
-			break;
-		case YAML_STREAM_END_EVENT:
-			break;
-		case YAML_DOCUMENT_START_EVENT:
-			break;
-		case YAML_DOCUMENT_END_EVENT:
-			break;
-		case YAML_SEQUENCE_START_EVENT:
-			break;
-		case YAML_SEQUENCE_END_EVENT:
-			break;
-		case YAML_MAPPING_START_EVENT:
-			break;
-		case YAML_MAPPING_END_EVENT:
-			break;
-		case YAML_ALIAS_EVENT:
-			break;
-		case YAML_SCALAR_EVENT:
-			printf("%s\n", event.data.scalar.value);
-			break;
-		}
-
-		done = (event.type == YAML_STREAM_END_EVENT);
-		yaml_event_delete(&event);
-	} while (!done);
-
-	yaml_parser_delete(&parser);
-	fclose(fh);
+	err = cyaml_load_data(&ctx, &handle_event, &foo, foo_schema, NULL);
+	if (err)
+		fprintf(stderr, "Failed to parse file: %s\n", cyaml_strerror(err));
 
 	return 0;
 }
