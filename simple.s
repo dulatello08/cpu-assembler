@@ -1,8 +1,7 @@
-STO 0 #10
-STO 1 #14
-SBR 1 0 #DEAD
-LDM 0 #DEAD
-PSH 0
-POP d
-STM d #00ff
+STO 0 #48
+STO 1 #69
+PSH 1
+POP 2
+STM 0 #eff7
+STM 2 #eff7
 HLT
