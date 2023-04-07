@@ -1,0 +1,19 @@
+- opcode: 0x01
+  name: NOP
+  operands: []
+
+- opcode: 0x02
+  name: LOAD
+  operands:
+    - type: u8
+      name: register
+    - type: u16
+      name: address
+
+- opcode: 0x03
+  name: STORE
+  operands:
+    - type: u8
+      name: register
+    - type: u16
+      name: address
