@@ -33,7 +33,7 @@ fn main() {
     for doc in docs.iter() {
         let arr = doc.as_vec().unwrap();
         for item in arr.iter() {
-            println!("{}", item.as_str().unwrap());
+            println!("{}", item.as_str());
             let opcode_str = item["opcode"].as_str().unwrap();
             let opcode = u8::from_str_radix(&opcode_str[2..], 16).unwrap();
             let num_ops = item["num_ops"].as_i64().unwrap() as u8;
