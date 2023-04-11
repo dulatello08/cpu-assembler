@@ -3,4 +3,4 @@
 - opcode: 0x01
   num_ops: 2
 - opcode: 0x02
-  num_ops: 3
+  num_ops: 4
