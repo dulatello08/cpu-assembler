@@ -1,63 +1,74 @@
-#include "main.h"
+#include <stdio.h>
+#include <yaml.h>
 
-static void handle_event(cyaml_event_t event, cyaml_event_info_t *info, void *ctx)
-{
-	switch(event) {
-	case CYAML_EVENT_ENTRY:
-		printf("Entry\n");
-		break;
-	case CYAML_EVENT_EXIT:
-		printf("Exit\n");
-		break;
-	case CYAML_EVENT_STRING:
-		printf("String: %s\n", info->value.string);
-		break;
-	case CYAML_EVENT_INT:
-		printf("Int: %d\n", info->value.integer);
-		break;
-	case CYAML_EVENT_MAP_START:
-		printf("Map start\n");
-		break;
-	case CYAML_EVENT_MAP_END:
-		printf("Map end\n");
-		break;
-	case CYAML_EVENT_SEQ_START:
-		printf("Seq start\n");
-		break;
-	case CYAML_EVENT_SEQ_END:
-		printf("Seq end\n");
-		break;
-	}
-}
+typedef struct {
+    int opcode;
+    int num_ops;
+} Opcode;
 
-int main(int argc, char *argv[])
-{
-	cyaml_err_t err;
-	cyaml_config_t config = {
-		.log_level = CYAML_LOG_WARNING,
-		.log_fn = cyaml_log,
-	};
-	cyaml_context_t ctx;
-	foo_t foo;
+int main() {
+    FILE *file = fopen("test.yaml", "r");  // replace with your YAML file name
+    if (!file) {
+        printf("Failed to open file\n");
+        return 1;
+    }
 
-	if (argc != 3) {
-		fprintf(stderr, "Usage: %s <filename> <mode>\n", argv[0]);
-		return 1;
-	}
+    yaml_parser_t parser;
+    yaml_event_t event;
+    Opcode opcode;
 
-	ctx.config = &config;
-	ctx.filename = argv[1];
-	ctx.fh = fopen(argv[1], argv[2]);
-	if (!ctx.fh) {
-		perror("fopen");
-		return 1;
-	}
+    // Initialize parser
+    if (!yaml_parser_initialize(&parser)) {
+        printf("Failed to initialize parser\n");
+        return 1;
+    }
 
-	ctx.state = CYAML_STATE_INIT_PARSE;
+    // Set input file
+    yaml_parser_set_input_file(&parser, file);
 
-	err = cyaml_load_data(&ctx, &handle_event, &foo, foo_schema, NULL);
-	if (err)
-		fprintf(stderr, "Failed to parse file: %s\n", cyaml_strerror(err));
+    // Parse events
+    while (1) {
+        if (!yaml_parser_parse(&parser, &event)) {
+            printf("Failed to parse event\n");
+            return 1;
+        }
 
-	return 0;
+        if (event.type == YAML_SCALAR_EVENT) {
+            if (strcmp((char *)event.data.scalar.value, "opcode") == 0) {
+                // Opcode scalar found, read next event for opcode value
+                if (!yaml_parser_parse(&parser, &event)) {
+                    printf("Failed to parse event\n");
+                    return 1;
+                }
+                opcode.opcode = strtol((char *)event.data.scalar.value, NULL, 0);
+            } else if (strcmp((char *)event.data.scalar.value, "num_ops") == 0) {
+                // Num_ops scalar found, read next event for num_ops value
+                if (!yaml_parser_parse(&parser, &event)) {
+                    printf("Failed to parse event\n");
+                    return 1;
+                }
+                opcode.num_ops = strtol((char *)event.data.scalar.value, NULL, 0);
+            }
+        }
+
+        if (event.type == YAML_SEQUENCE_END_EVENT) {
+            // End of sequence, do something with opcode
+            printf("Opcode: 0x%02X, Num_ops: %d\n", opcode.opcode, opcode.num_ops);
+			opcode.opcode = 0;
+            opcode.num_ops = 0;
+        }
+
+        if (event.type == YAML_STREAM_END_EVENT) {
+            // End of stream, break out of loop
+            break;
+        }
+
+        // Free event
+        yaml_event_delete(&event);
+    }
+
+    // Cleanup
+    yaml_parser_delete(&parser);
+    fclose(file);
+    return 0;
 }
