@@ -19,8 +19,10 @@ void *realloc_zero(void *ptr, size_t new_size) {
     return new_ptr;
 }
 
-uint8_t get_opcode(const char* instruction) {
+uint8_t get_opcode(const char* instruction, uint8_t conf) {
     printf("%s\n", instruction);
+    for()
+    /*
     if (strcmp(instruction, "NOP") == 0) {
         return OP_NOP;
     } else if (strcmp(instruction, "ADD") == 0) {
@@ -76,7 +78,7 @@ uint8_t get_opcode(const char* instruction) {
     } else {
         printf("Invalid instruction\n");
         return SENTINEL_VALUE;
-    }
+    } */
 }
 
 uint16_t get_operand(const char* operand) {

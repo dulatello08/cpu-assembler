@@ -28,8 +28,8 @@ void write_code(uint8_t *code, uint16_t code_len, const char* filename) {
 
 int main(int argc, char* argv[]) {
     // Check for correct number of arguments
-    if (argc != 3 && argc != 2) {
-        printf("Usage: assembler <input_file> [output_file]\n");
+    if (argc != 4 && argc != 3) {
+        printf("Usage: assembler <input_file> <configuration_file> [output_file]\n");
         return 1;
     }
 
@@ -37,6 +37,33 @@ int main(int argc, char* argv[]) {
     FILE* input_file = fopen(argv[1], "r");
     if (input_file == NULL) {
         printf("Error opening input file\n");
+        return 1;
+    }
+
+    // Open the conf file
+    FILE* configuration_file = fopen(argv[2], "r");
+    if (configuration_file == NULL) {
+        printf("Error opening configuration file\n");
+        return 1;
+    }
+
+    // Get the file size
+    fseek(configuration_file, 0, SEEK_END);
+    long file_size = ftell(configuration_file);
+    fseek(configuration_file, 0, SEEK_SET);
+
+    // Allocate memory for the data
+    uint8_t* conf = malloc(file_size);
+    if (conf == NULL) {
+        printf("Error allocating memory\n");
+        return 1;
+    }
+
+    // Read the data into memory
+    size_t bytes_read = fread(conf, sizeof(uint8_t), file_size, configuration_file);
+    if (bytes_read != file_size) {
+        printf("Error reading file\n");
+        free(conf);
         return 1;
     }
 
@@ -77,7 +104,7 @@ int main(int argc, char* argv[]) {
     uint16_t instruction_count = 0;
     uint8_t current_token = 0;
     while (instruction_count < tokenLen) {
-        parse(&instructions[instruction_count], tokens[instruction_count], &current_token, &labels, &current_size);
+        parse(&instructions[instruction_count], tokens[instruction_count], &current_token, &labels, &current_size, conf);
         current_token += num_operands(instructions[instruction_count].opcode) + 1;
         instruction_count++;
     }
