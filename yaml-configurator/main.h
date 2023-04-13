@@ -3,3 +3,4 @@
 #include <string.h>
 #include <stdint.h>
 #include <yaml.h>
+#include <getopt.h>

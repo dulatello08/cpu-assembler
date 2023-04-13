@@ -6,11 +6,49 @@ typedef struct {
     int op2_mode;
 } Opcode;
 
-int main() {
-    FILE *file = fopen("test.yaml", "r");  // replace with your YAML file name
-    if (!file) {
-        printf("Failed to open file\n");
-        return 1;
+int main(int argc, char **argv) {
+    int option;
+    char *inputFileName = NULL;
+    char *outputFileName = NULL;
+    FILE *inputFile = NULL;
+    FILE *outputFile = NULL;
+
+    // Parse command line arguments
+    static struct option long_options[] = {
+            {"input", required_argument, 0, 'i'},
+            {"output", required_argument, 0, 'o'},
+            {0, 0, 0, 0}
+    };
+
+    while ((option = getopt_long(argc, argv, "i:o:", long_options, NULL)) != -1) {
+        switch (option) {
+            case 'i':
+                inputFileName = optarg;
+                break;
+            case 'o':
+                outputFileName = optarg;
+                break;
+            default:
+                fprintf(stderr, "Usage: %s [-i input_file] [-o output_file]\n", argv[0]);
+                exit(EXIT_FAILURE);
+        }
+    }
+    // Open input file
+    if (inputFileName) {
+        inputFile = fopen(inputFileName, "r");
+        if (!inputFile) {
+            fprintf(stderr, "Failed to open input file %s\n", inputFileName);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Open output file
+    if (outputFileName) {
+        outputFile = fopen(outputFileName, "w");
+        if (!outputFile) {
+            fprintf(stderr, "Failed to open output file %s\n", outputFileName);
+            exit(EXIT_FAILURE);
+        }
     }
 
     yaml_parser_t parser;
@@ -26,7 +64,7 @@ int main() {
     }
 
     // Set input file
-    yaml_parser_set_input_file(&parser, file);
+    yaml_parser_set_input_file(&parser, inputFile);
 
     // Parse events
     while (1) {
@@ -66,8 +104,7 @@ int main() {
                     printf("Failed to parse event\n");
                     return 1;
                 }
-                opcodes[num_opcodes].op2_mode = strtol((char *)event.data.scalar.value, NULL, 0);
-                num_opcodes++;
+                opcodes[num_opcodes-1].op2_mode = strtol((char *)event.data.scalar.value, NULL, 0);
             }
         }
 
@@ -81,18 +118,20 @@ int main() {
     }
 
     // Print opcodes
-    uint8_t *outputArray = malloc(3 * sizeof(uint8_t));
+    uint8_t *outputArray = malloc(num_opcodes*3 * sizeof(uint8_t));
     for (int i = 0; i < num_opcodes; i++) {
         printf("Opcode: 0x%02X, Num_ops: %d, Op2_mode: %d\n", opcodes[i].opcode, opcodes[i].num_ops, opcodes[i].op2_mode);
         outputArray[i] = opcodes[i].opcode;
         outputArray[i+1] = opcodes[i].num_ops;
         outputArray[i+2] = opcodes[i].op2_mode;
-        outputArray = realloc(outputArray, i*3);
     }
+    fwrite(outputArray, sizeof(uint8_t), num_opcodes*3, outputFile);
+    free(outputArray);
 
     // Cleanup
     yaml_parser_delete(&parser);
-    fclose(file);
+    fclose(inputFile);
+    fclose(outputFile);
     free(opcodes);
     return 0;
 }
