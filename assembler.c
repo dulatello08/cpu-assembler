@@ -19,9 +19,16 @@ void *realloc_zero(void *ptr, size_t new_size) {
     return new_ptr;
 }
 
-uint8_t get_opcode(const char* instruction, uint8_t conf) {
+uint8_t get_opcode(const char* instruction, uint8_t* conf, size_t confSize) {
     printf("%s\n", instruction);
-    for()
+    char *buffer = malloc(4 * sizeof(char));
+    for(int i = 0; i < (int) confSize; i+=6) {
+        memcpy(buffer, &(conf[i+1]), 3);
+        buffer[3] = '\0';
+        if (strcmp(instruction, buffer) == 0) {
+            return conf[i];
+        }
+    }
     /*
     if (strcmp(instruction, "NOP") == 0) {
         return OP_NOP;
@@ -225,11 +232,11 @@ Token* lex(const char* input, uint8_t current_line) {
 
 // Function to parse the tokens into a list of instructions
 void parse(Instruction *instructions, const Token *tokens, const uint8_t *current_token, Labels **label_addresses,
-           size_t *current_size) {
+           size_t *current_size, uint8_t *conf, size_t confSize) {
     if (tokens[0].type == TYPE_OPCODE) {
 
         // Get the opcode for the instruction or label
-        instructions->opcode = get_opcode(tokens[0].value);
+        instructions->opcode = get_opcode(tokens[0].value, conf, confSize);
         // Check for operands
         if (tokens[1].type == TYPE_REGISTER && tokens[2].type == TYPE_REGISTER && tokens[3].type == TYPE_OPERAND_2) {
             instructions->operand_rd = get_operand(tokens[1].value);
@@ -328,8 +335,15 @@ uint8_t *generate_code(Instruction *instructions, uint8_t instruction_count) {
     return code;
 }
 
-uint8_t num_operands(uint8_t opcode) {
-    switch (opcode) {
+uint8_t num_operands(uint8_t opcode, const uint8_t *conf, size_t confSize) {
+    uint8_t *num_ops = malloc(1 * sizeof(uint8_t));
+    for(int i = 0; i < (int) confSize; i+=6) {
+        num_ops[0] = conf[i+4];
+        if(conf[i] == opcode) {
+            return *num_ops;
+        }
+    }
+    /*switch (opcode) {
         case OP_NOP:
         case OP_HLT:
         case OP_SCH:
@@ -361,16 +375,48 @@ uint8_t num_operands(uint8_t opcode) {
         case OP_BNR:
         case OP_TSK:
             return 3;
-    }
+    }*/
 }
 
-uint8_t operand1_mode(uint8_t opcode) {
-    switch (opcode) {
-        case OP_BRN:
-        case OP_BRO:
-        case OP_BRZ:
-            return 1;
+uint8_t operand1_mode(uint8_t opcode, const uint8_t *conf, size_t confSize) {
+    uint8_t *operand1_mode = malloc(1 * sizeof(uint8_t));
+    for (int i = 0; i < (int) confSize; i += 6) {
+        operand1_mode[0] = conf[i + 5];
+        if (conf[i] == opcode) {
+            return *operand1_mode;
+        }
+    }
+    /*switch (opcode) {
+        case OP_NOP:
+        case OP_HLT:
+        case OP_SCH:
         default:
             return 0;
-    }
+        case OP_CLZ:
+        case OP_PSH:
+        case OP_POP:
+        case OP_SWT:
+        case OP_KIL:
+            return 1;
+        case OP_ADD:
+        case OP_SUB:
+        case OP_MUL:
+        case OP_STO:
+        case OP_BRN:
+        case OP_BRZ:
+        case OP_BRO:
+            return 2;
+        case OP_ADM:
+        case OP_SBM:
+        case OP_MLM:
+        case OP_ADR:
+        case OP_SBR:
+        case OP_MLR:
+        case OP_STM:
+        case OP_LDM:
+        case OP_BRR:
+        case OP_BNR:
+        case OP_TSK:
+            return 3;
+    }*/
 }

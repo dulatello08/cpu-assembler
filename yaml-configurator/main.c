@@ -3,7 +3,7 @@
 typedef struct {
     int opcode;
     int num_ops;
-    int op2_mode;
+    int op1_mode;
 } Opcode;
 
 int main(int argc, char **argv) {
@@ -98,13 +98,13 @@ int main(int argc, char **argv) {
                 }
                 opcodes[num_opcodes].num_ops = strtol((char *)event.data.scalar.value, NULL, 0);
                 num_opcodes++;
-            } else if (strcmp((char *)event.data.scalar.value, "op2_mode") == 0) {
+            } else if (strcmp((char *)event.data.scalar.value, "op1_mode") == 0) {
                 // Num_ops scalar found, read next event for num_ops value
                 if (!yaml_parser_parse(&parser, &event)) {
                     printf("Failed to parse event\n");
                     return 1;
                 }
-                opcodes[num_opcodes-1].op2_mode = strtol((char *)event.data.scalar.value, NULL, 0);
+                opcodes[num_opcodes-1].op1_mode = strtol((char *)event.data.scalar.value, NULL, 0);
             }
         }
 
@@ -120,10 +120,10 @@ int main(int argc, char **argv) {
     // Print opcodes
     uint8_t *outputArray = malloc(num_opcodes*3 * sizeof(uint8_t));
     for (int i = 0; i < num_opcodes; i++) {
-        printf("Opcode: 0x%02X, Num_ops: %d, Op2_mode: %d\n", opcodes[i].opcode, opcodes[i].num_ops, opcodes[i].op2_mode);
+        printf("Opcode: 0x%02X, Num_ops: %d, Op2_mode: %d\n", opcodes[i].opcode, opcodes[i].num_ops, opcodes[i].op1_mode);
         outputArray[i] = opcodes[i].opcode;
         outputArray[i+1] = opcodes[i].num_ops;
-        outputArray[i+2] = opcodes[i].op2_mode;
+        outputArray[i+2] = opcodes[i].op1_mode;
     }
     fwrite(outputArray, sizeof(uint8_t), num_opcodes*3, outputFile);
     free(outputArray);

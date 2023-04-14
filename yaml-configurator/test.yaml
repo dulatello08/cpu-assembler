@@ -4,4 +4,4 @@
   num_ops: 2
 - opcode: 0x02
   num_ops: 4
-  op2_mode: 5
+  op1_mode: 5
