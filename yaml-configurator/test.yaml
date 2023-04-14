@@ -1,7 +1,10 @@
 - opcode: 0x00
+  name: "nop"
   num_ops: 1
 - opcode: 0x01
+  name: "add"
   num_ops: 2
 - opcode: 0x02
   num_ops: 4
+  name: "sub"
   op1_mode: 5

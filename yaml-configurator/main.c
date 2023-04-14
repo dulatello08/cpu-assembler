@@ -4,6 +4,7 @@ typedef struct {
     int opcode;
     int num_ops;
     int op1_mode;
+    char *name;
 } Opcode;
 
 int main(int argc, char **argv) {
@@ -90,14 +91,21 @@ int main(int argc, char **argv) {
                     }
                 }
                 opcodes[num_opcodes].opcode = strtol((char *)event.data.scalar.value, NULL, 0);
+            } else if (strcmp((char *)event.data.scalar.value, "name") == 0) {
+                // Num_ops scalar found, read next event for num_ops value
+                if (!yaml_parser_parse(&parser, &event)) {
+                    printf("Failed to parse event\n");
+                    return 1;
+                }
+                opcodes[num_opcodes].name = (char *)event.data.scalar.value;
+                num_opcodes++;
             } else if (strcmp((char *)event.data.scalar.value, "num_ops") == 0) {
                 // Num_ops scalar found, read next event for num_ops value
                 if (!yaml_parser_parse(&parser, &event)) {
                     printf("Failed to parse event\n");
                     return 1;
                 }
-                opcodes[num_opcodes].num_ops = strtol((char *)event.data.scalar.value, NULL, 0);
-                num_opcodes++;
+                opcodes[num_opcodes-1].num_ops = strtol((char *)event.data.scalar.value, NULL, 0);
             } else if (strcmp((char *)event.data.scalar.value, "op1_mode") == 0) {
                 // Num_ops scalar found, read next event for num_ops value
                 if (!yaml_parser_parse(&parser, &event)) {
@@ -122,8 +130,11 @@ int main(int argc, char **argv) {
     for (int i = 0; i < num_opcodes; i++) {
         printf("Opcode: 0x%02X, Num_ops: %d, Op2_mode: %d\n", opcodes[i].opcode, opcodes[i].num_ops, opcodes[i].op1_mode);
         outputArray[i] = opcodes[i].opcode;
-        outputArray[i+1] = opcodes[i].num_ops;
-        outputArray[i+2] = opcodes[i].op1_mode;
+        outputArray[i+1] = opcodes[i].name[0];
+        outputArray[i+2] = opcodes[i].name[1];
+        outputArray[i+3] = opcodes[i].name[2];
+        outputArray[i+5] = opcodes[i].num_ops;
+        outputArray[i+6] = opcodes[i].op1_mode;
     }
     fwrite(outputArray, sizeof(uint8_t), num_opcodes*3, outputFile);
     free(outputArray);
