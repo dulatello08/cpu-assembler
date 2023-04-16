@@ -5,6 +5,6 @@
   name: "add"
   num_ops: 2
 - opcode: 0x02
-  num_ops: 4
   name: "sub"
+  num_ops: 4
   op1_mode: 5
