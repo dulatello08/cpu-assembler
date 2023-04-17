@@ -2,6 +2,8 @@
 // Created by dulat on 1/1/23.
 //
 #include "main.h"
+#include <stdint.h>
+#include <sys/types.h>
 
 void *realloc_zero(void *ptr, size_t new_size) {
     void *new_ptr = realloc(ptr, new_size);
@@ -29,6 +31,7 @@ uint8_t get_opcode(const char* instruction, uint8_t* conf, size_t confSize) {
             return conf[i];
         }
     }
+    return false;
     /*
     if (strcmp(instruction, "NOP") == 0) {
         return OP_NOP;
@@ -281,7 +284,7 @@ void parse(Instruction *instructions, const Token *tokens, const uint8_t *curren
         }
         return;
     } else if (tokens[0].type == TYPE_LABEL) {
-        instructions->opcode = get_opcode("NOP");
+        instructions->opcode = get_opcode("NOP", conf, confSize);
         instructions->operand_rd = 0;
         instructions->operand_rn = 0;
         instructions->operand2 = 0;
@@ -292,7 +295,7 @@ void parse(Instruction *instructions, const Token *tokens, const uint8_t *curren
     }
 }
 
-uint8_t *generate_code(Instruction *instructions, uint8_t instruction_count) {
+uint8_t *generate_code(Instruction *instructions, uint8_t instruction_count, uint8_t *conf, size_t confSize) {
     uint8_t *code = calloc(MAX_CODE_LENGTH, sizeof(uint8_t));
     uint8_t current_pointer = 0;
 
@@ -300,13 +303,13 @@ uint8_t *generate_code(Instruction *instructions, uint8_t instruction_count) {
         uint8_t opcode = instructions[i].opcode;
         uint8_t operand1;
         uint8_t operand2 = instructions[i].operand2;
-        if (operand1_mode(opcode) == 0) {
+        if (operand1_mode(opcode, conf, confSize) == 0) {
             operand1 = (instructions[i].operand_rd << 4) | instructions[i].operand_rn;
         } else {
             operand1 = ((uint16_t) instructions[i].operand2 & (uint16_t) 0xFF00) >> 8;
             operand2 = (uint16_t) instructions[i].operand2 & (uint16_t) 0x00FF;
         }
-        uint8_t num_ops = num_operands(opcode);
+        uint8_t num_ops = num_operands(opcode, conf, confSize);
 
         switch (num_ops) {
             case 0:
@@ -343,6 +346,7 @@ uint8_t num_operands(uint8_t opcode, const uint8_t *conf, size_t confSize) {
             return *num_ops;
         }
     }
+    return false;
     /*switch (opcode) {
         case OP_NOP:
         case OP_HLT:
@@ -386,6 +390,7 @@ uint8_t operand1_mode(uint8_t opcode, const uint8_t *conf, size_t confSize) {
             return *operand1_mode;
         }
     }
+    return false;
     /*switch (opcode) {
         case OP_NOP:
         case OP_HLT:

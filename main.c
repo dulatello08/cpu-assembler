@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
 
     // Read the data into memory
     size_t bytes_read = fread(conf, sizeof(uint8_t), file_size, configuration_file);
-    if (bytes_read != file_size) {
+    if (bytes_read != (size_t) file_size) {
         printf("Error reading file\n");
         free(conf);
         return 1;
@@ -104,8 +104,8 @@ int main(int argc, char* argv[]) {
     uint16_t instruction_count = 0;
     uint8_t current_token = 0;
     while (instruction_count < tokenLen) {
-        parse(&instructions[instruction_count], tokens[instruction_count], &current_token, &labels, &current_size, conf);
-        current_token += num_operands(instructions[instruction_count].opcode) + 1;
+        parse(&instructions[instruction_count], tokens[instruction_count], &current_token, &labels, &current_size, conf, bytes_read);
+        current_token += num_operands(instructions[instruction_count].opcode, conf, bytes_read) + 1;
         instruction_count++;
     }
     // Generate machine code
