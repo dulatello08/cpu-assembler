@@ -21,7 +21,7 @@ void *realloc_zero(void *ptr, size_t new_size) {
     return new_ptr;
 }
 
-uint8_t get_opcode(const char* instruction, uint8_t* conf, size_t confSize) {
+uint8_t get_opcode(const char* instruction, const uint8_t* conf, size_t confSize) {
     printf("%s\n", instruction);
     char *buffer = malloc(4 * sizeof(char));
     for(int i = 0; i < (int) confSize; i+=6) {
@@ -235,7 +235,7 @@ Token* lex(const char* input, uint8_t current_line) {
 
 // Function to parse the tokens into a list of instructions
 void parse(Instruction *instructions, const Token *tokens, const uint8_t *current_token, Labels **label_addresses,
-           size_t *current_size, uint8_t *conf, size_t confSize) {
+           size_t *current_size, const uint8_t *conf, size_t confSize) {
     if (tokens[0].type == TYPE_OPCODE) {
 
         // Get the opcode for the instruction or label
@@ -295,7 +295,7 @@ void parse(Instruction *instructions, const Token *tokens, const uint8_t *curren
     }
 }
 
-uint8_t *generate_code(Instruction *instructions, uint8_t instruction_count, uint8_t *conf, size_t confSize) {
+uint8_t *generate_code(Instruction *instructions, uint8_t instruction_count, const uint8_t *conf, size_t confSize) {
     uint8_t *code = calloc(MAX_CODE_LENGTH, sizeof(uint8_t));
     uint8_t current_pointer = 0;
 

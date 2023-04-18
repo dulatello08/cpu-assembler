@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
     }
     // Generate machine code
 
-    uint8_t *code = generate_code(instructions, instruction_count);
+    uint8_t *code = generate_code(instructions, instruction_count, conf, bytes_read);
     //uint16_t* code_len = get_code_len(instructions);
 
     // Write the machine code to the output file
