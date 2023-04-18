@@ -79,3 +79,10 @@
 - opcode: 0x19
   name: "KIL"
   num_ops: 1
+- opcode: 0x1A
+  name: "JSR"
+  num_ops: 2
+  op1_mode: 1
+- opcode: 0x1B
+  name: "OSR"
+  num_ops: 0
