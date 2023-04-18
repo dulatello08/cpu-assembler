@@ -114,9 +114,9 @@ int main(int argc, char* argv[]) {
     //uint16_t* code_len = get_code_len(instructions);
 
     // Write the machine code to the output file
-    if (argc == 3) {
+    if (argc == 4) {
         // Use the output file specified by the user
-        write_code(code, PROGRAM_WORDS, argv[2]);
+        write_code(code, PROGRAM_WORDS, argv[4]);
     } else {
         // Use the default output file
         write_code(code, PROGRAM_WORDS, "program.m");
