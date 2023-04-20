@@ -27,21 +27,48 @@ void write_code(uint8_t *code, uint16_t code_len, const char* filename) {
 
 
 int main(int argc, char* argv[]) {
-    // Check for correct number of arguments
-    if (argc != 4 && argc != 3) {
-        printf("Usage: assembler <input_file> <configuration_file> [output_file]\n");
+    char* input_filename = NULL;
+    char* conf_filename = NULL;
+    char* output_filename = NULL;
+
+    // Parse command line arguments
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--input") == 0) {
+            if (i + 1 < argc) {
+                input_filename = argv[++i];
+            }
+        } else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--conf") == 0) {
+            if (i + 1 < argc) {
+                conf_filename = argv[++i];
+            }
+        } else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0) {
+            if (i + 1 < argc) {
+                output_filename = argv[++i];
+            }
+        } else {
+            printf("Usage: assembler -i <input_file> -c <configuration_file> [-o <output_file>]\n");
+            return 1;
+        }
+    }
+
+    if (!input_filename || !conf_filename) {
+        printf("Usage: assembler -i <input_file> -c <configuration_file> [-o <output_file>]\n");
         return 1;
     }
 
-    // Open the input file
-    FILE* input_file = fopen(argv[1], "r");
+    if (!output_filename) {
+        output_filename = "program.m";
+    }
+
+    // Process the input file
+    FILE* input_file = fopen(input_filename, "r");
     if (input_file == NULL) {
         printf("Error opening input file\n");
         return 1;
     }
 
-    // Open the conf file
-    FILE* configuration_file = fopen(argv[2], "r");
+    // Process the conf file
+    FILE* configuration_file = fopen(conf_filename, "r");
     if (configuration_file == NULL) {
         printf("Error opening configuration file\n");
         return 1;
