@@ -257,6 +257,8 @@ void parse(Instruction *instructions, const Token *tokens, const uint8_t *curren
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = 0;
             instructions->operand2 = 0;
+        } else if (tokens[1].type == TYPE_OPERAND_2) {
+            instructions->operand2 = get_operand(tokens[1].value);
         } else if (tokens[1].type == TYPE_LABEL) {
             instructions->operand_rd = 0;
             instructions->operand_rn = 0;
@@ -381,6 +383,7 @@ uint8_t num_operands(uint8_t opcode, const uint8_t *conf, size_t confSize) {
             return 3;
     }*/
 }
+
 
 uint8_t operand1_mode(uint8_t opcode, const uint8_t *conf, size_t confSize) {
     uint8_t *operand1_mode = malloc(1 * sizeof(uint8_t));
