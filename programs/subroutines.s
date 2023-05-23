@@ -1,4 +1,4 @@
 ADD 0 #5
 ADD 1 #2
-MLM 0 1 #ff
+MLR 0 1 #ff
 OSR
