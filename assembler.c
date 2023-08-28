@@ -5,14 +5,13 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-void *realloc_zero(void *ptr, size_t new_size) {
+void *realloc_zero(void *ptr, size_t old_size, size_t new_size) {
     void *new_ptr = realloc(ptr, new_size);
     if (new_ptr == NULL) {
         // Handle allocation error
         fprintf(stderr, "Error: Failed to reallocate memory\n");
         exit(1);
     } else if ((new_size > 0) != 0) {
-        size_t old_size = malloc_size(new_ptr);
         if (new_size > old_size) {
             // Zero out newly allocated memory
             memset(new_ptr + old_size, 0, new_size - old_size);
@@ -109,7 +108,7 @@ void get_label(Labels **label_addresses, const char label[MAX_TOKEN_LEN + 1], co
             return;
         }
     } else {
-        Labels *temp = realloc_zero(*label_addresses, (*current_size + 1) * sizeof(Labels));
+        Labels *temp = realloc_zero(*label_addresses, (*current_size * sizeof(Labels)), (*current_size + 1) * sizeof(Labels));
         if (temp == NULL) {
             free(labels);
             return;
@@ -150,7 +149,7 @@ Token* lex(const char* input, uint8_t current_line) {
         // Check for an instruction or directive
         if (isupper(input[i])) {
             // Allocate memory for the new token
-            tokens = realloc_zero(tokens, sizeof(Token) * (token_count + 1));
+            tokens = realloc_zero(tokens, token_count + sizeof(Token), sizeof(Token) * (token_count + 1));
 
             // Read the instruction or directive into the new token
             int j = 0;
@@ -168,7 +167,7 @@ Token* lex(const char* input, uint8_t current_line) {
         // Check for an immediate value
         if (input[i] == '#') {
             // Allocate memory for the new token
-            tokens = realloc_zero(tokens, sizeof(Token) * (token_count + 1));
+            tokens = realloc_zero(tokens, token_count + sizeof(Token), sizeof(Token) * (token_count + 1));
 
             // Read the immediate value into the new token
             i++;
