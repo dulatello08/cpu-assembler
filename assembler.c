@@ -12,7 +12,7 @@ void *realloc_zero(void *ptr, size_t new_size) {
         fprintf(stderr, "Error: Failed to reallocate memory\n");
         exit(1);
     } else if ((new_size > 0) != 0) {
-        size_t old_size = malloc_usable_size(new_ptr);
+        size_t old_size = malloc_size(new_ptr);
         if (new_size > old_size) {
             // Zero out newly allocated memory
             memset(new_ptr + old_size, 0, new_size - old_size);

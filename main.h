@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stddef.h>
-#include <malloc.h>
+#include <malloc/malloc.h>
 #include <arpa/inet.h>
 
 #define MAX_TOKEN_LEN 16
