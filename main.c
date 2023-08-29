@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
     Token** tokens = calloc(1, sizeof(Token));
     int tokenLen = 0;
     for (int i = 0; i < num_lines; i++) {
-        tokens = realloc_zero(tokens, sizeof(Token)*(tokenLen+1));
+        tokens = realloc_zero(tokens, tokenLen * sizeof(Token), sizeof(Token)*(tokenLen+1));
         tokens[i] = lex(lines[i], i);
         tokenLen++;
     }

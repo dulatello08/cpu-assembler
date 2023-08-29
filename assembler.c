@@ -149,7 +149,7 @@ Token* lex(const char* input, uint8_t current_line) {
         // Check for an instruction or directive
         if (isupper(input[i])) {
             // Allocate memory for the new token
-            tokens = realloc_zero(tokens, token_count + sizeof(Token), sizeof(Token) * (token_count + 1));
+            tokens = realloc_zero(tokens, token_count * sizeof(Token), sizeof(Token) * (token_count + 1));
 
             // Read the instruction or directive into the new token
             int j = 0;
@@ -167,7 +167,7 @@ Token* lex(const char* input, uint8_t current_line) {
         // Check for an immediate value
         if (input[i] == '#') {
             // Allocate memory for the new token
-            tokens = realloc_zero(tokens, token_count + sizeof(Token), sizeof(Token) * (token_count + 1));
+            tokens = realloc_zero(tokens, token_count * sizeof(Token), sizeof(Token) * (token_count + 1));
 
             // Read the immediate value into the new token
             i++;
@@ -185,7 +185,7 @@ Token* lex(const char* input, uint8_t current_line) {
         // Check for a register
         if (isxdigit(tolower(input[i]))) {
             // Allocate memory for the new token
-            tokens = realloc_zero(tokens, sizeof(Token) * (token_count + 1));
+            tokens = realloc_zero(tokens,  token_count * sizeof(Token), sizeof(Token) * (token_count + 1));
 
             // Read the immediate value into the new token
             /*
@@ -205,7 +205,7 @@ Token* lex(const char* input, uint8_t current_line) {
         }
         // Check for labels
         if (input[i] == '.') {
-            tokens = realloc_zero(tokens, sizeof(Token) * (token_count + 1));
+            tokens = realloc_zero(tokens, token_count * sizeof(Token), sizeof(Token) * (token_count + 1));
             int j = 0;
             while (isprint(input[i]) && j < MAX_TOKEN_LEN) {
                 tokens[token_count].value[j] = input[i];
@@ -225,7 +225,7 @@ Token* lex(const char* input, uint8_t current_line) {
     }
 
     // Add a sentinel token to the end of the list
-    tokens = realloc_zero(tokens, sizeof(Token) * (token_count + 1));
+    tokens = realloc_zero(tokens, token_count * sizeof(Token), sizeof(Token) * (token_count + 1));
     tokens[token_count].value[0] = '\0';
     tokens[token_count].type = -1;
 

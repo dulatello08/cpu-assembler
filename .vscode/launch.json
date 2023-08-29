@@ -9,7 +9,7 @@
             "type": "gdb",
             "request": "launch",
             "target": "./assembler",
-            "arguments": "./os-simple.s",
+            "arguments": "-c conf.bin -i programs/wait-for-input.s",
             "cwd": "${workspaceRoot}",
             "valuesFormatting": "parseText"
         }
