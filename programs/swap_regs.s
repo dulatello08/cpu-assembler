@@ -1,0 +1,5 @@
+STO 1 #04
+PSH 1
+POP 0
+STM 0 #ff
+HLT
