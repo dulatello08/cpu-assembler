@@ -1,7 +1,7 @@
-STO 0 #48
-STO 1 #69
-PSH 1
-POP 2
-STM 0 #eff7
-STM 2 #eff7
-HLT
+SUB 0 #e5
+JSR #f009
+NOP
+OSR
+NOP ; subroutine start
+SUB 0 #1
+OSR

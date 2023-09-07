@@ -1,0 +1,8 @@
+STO 0 #ea
+PSH 0
+PSH 0
+STO 1 #42
+RSM 1
+LDM 2 #eaea
+STM 2 #ff
+HLT

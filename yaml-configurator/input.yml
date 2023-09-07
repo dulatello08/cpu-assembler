@@ -74,3 +74,9 @@
 - opcode: 0x17
   name: "OSR"
   num_ops: 0
+- opcode: 0x18
+  name: "RSM"
+  num_ops: 1
+- opcode: 0x19
+  name: "RLD"
+  num_ops: 1
