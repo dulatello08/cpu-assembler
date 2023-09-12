@@ -1,0 +1,27 @@
+STO 0 #48
+STM 0 #eff7
+STO 0 #65
+STM 0 #eff7
+STO 0 #6C
+STM 0 #eff7
+STO 0 #6C
+STM 0 #eff7
+STO 0 #6F
+STM 0 #eff7
+STO 0 #2C
+STM 0 #eff7
+STO 0 #20
+STM 0 #eff7
+STO 0 #77
+STM 0 #eff7
+STO 0 #6F
+STM 0 #eff7
+STO 0 #72
+STM 0 #eff7
+STO 0 #6C
+STM 0 #eff7
+STO 0 #64
+STM 0 #eff7
+STO 0 #21
+STM 0 #eff7
+HLT
