@@ -2,7 +2,7 @@ NOP
 STO 0 #0
 STO 1 #0
 STO 2 #f0
-STO 4 #20
+STO 4 #80
 .LOOP
     PSH 1
     PSH 2
