@@ -80,3 +80,13 @@
 - opcode: 0x19
   name: "RLD"
   num_ops: 1
+- opcode: 0x1A
+  name: "ENI"
+  num_ops: 0
+- opcode: 0x1B
+  name: "DSI"
+  num_ops: 0
+- opcode: 0x1C
+  name: "ITS"
+  num_ops: 2
+  op1_mode: 1
