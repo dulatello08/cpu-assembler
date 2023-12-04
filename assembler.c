@@ -116,7 +116,7 @@ void get_label(Labels **label_addresses, const char label[MAX_TOKEN_LEN + 1], co
         *label_addresses = temp;
     }
     strcpy(labels->label, label);
-    labels->address = (current_token == 0) ? 0 : (current_token - 1);
+    labels->address = current_token/*(current_token == 0) ? 0 : (current_token - 1)*/;
     memcpy(&((*label_addresses)[*current_size]), labels, sizeof(Labels));
     (*current_size)++;
     free(labels);
