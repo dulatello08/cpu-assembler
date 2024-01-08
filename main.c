@@ -124,6 +124,7 @@ int main(int argc, char* argv[]) {
     instructions = calloc(tokenLen, sizeof(Instruction));
     if (instructions == NULL) {
         // allocation failed
+        free(lines);
         return -1;
     }
     Labels *labels = calloc(1, sizeof(Labels));

@@ -4,7 +4,7 @@ STO 1 #00
 PSH 1
 PSH 0
 STM 0 #eff9
-ENI
+ENI ; enable int
 .LOOP
     NOP
     NOP

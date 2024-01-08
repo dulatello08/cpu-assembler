@@ -81,7 +81,7 @@ void parse(Instruction *instructions, const Token *tokens, const uint8_t *curren
 
 uint8_t get_opcode(const char* instruction, const uint8_t* conf, size_t confSize);
 uint16_t get_operand(const char* operand);
-uint8_t *generate_code(Instruction *instructions, uint8_t instruction_count, const uint8_t *conf, size_t confSize);
+uint8_t *generate_code(const Instruction *instructions, uint8_t instruction_count, const uint8_t *conf, size_t confSize);
 void write_code(uint8_t *code, uint16_t code_len, const char* filename);
 void *realloc_zero(void *ptr, size_t old_size, size_t new_size);
 void get_label(Labels **label_addresses, const char label[MAX_TOKEN_LEN + 1], uint8_t current_token, uint8_t *current_size);

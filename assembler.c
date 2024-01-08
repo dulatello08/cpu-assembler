@@ -31,63 +31,6 @@ uint8_t get_opcode(const char* instruction, const uint8_t* conf, size_t confSize
         }
     }
     return false;
-    /*
-    if (strcmp(instruction, "NOP") == 0) {
-        return OP_NOP;
-    } else if (strcmp(instruction, "ADD") == 0) {
-        return OP_ADD;
-    } else if (strcmp(instruction, "SUB") == 0) {
-        return OP_SUB;
-    } else if (strcmp(instruction, "MUL") == 0) {
-        return OP_MUL;
-    } else if (strcmp(instruction, "ADM") == 0) {
-        return OP_ADM;
-    } else if (strcmp(instruction, "SBM") == 0) {
-        return OP_SBM;
-    } else if (strcmp(instruction, "MLM") == 0) {
-        return OP_MLM;
-    } else if (strcmp(instruction, "ADR") == 0) {
-        return OP_ADR;
-    } else if (strcmp(instruction, "SBR") == 0) {
-        return OP_SBR;
-    } else if (strcmp(instruction, "MLR") == 0) {
-        return OP_MLR;
-    } else if (strcmp(instruction, "CLZ") == 0) {
-        return OP_CLZ;
-    } else if (strcmp(instruction, "STO") == 0) {
-        return OP_STO;
-    } else if (strcmp(instruction, "STM") == 0) {
-        return OP_STM;
-    } else if (strcmp(instruction, "LDM") == 0) {
-        return OP_LDM;
-    } else if (strcmp(instruction, "PSH") == 0) {
-        return OP_PSH;
-    } else if (strcmp(instruction, "POP") == 0) {
-        return OP_POP;
-    } else if (strcmp(instruction, "BRN") == 0) {
-        return OP_BRN;
-    } else if (strcmp(instruction, "BRZ") == 0) {
-        return OP_BRZ;
-    } else if (strcmp(instruction, "BRO") == 0) {
-        return OP_BRO;
-    } else if (strcmp(instruction, "BRR") == 0) {
-        return OP_BRR;
-    } else if (strcmp(instruction, "BNR") == 0) {
-        return OP_BNR;
-    } else if (strcmp(instruction, "HLT") == 0) {
-        return OP_HLT;
-    } else if (strcmp(instruction, "TSK") == 0) {
-        return OP_TSK;
-    } else if (strcmp(instruction, "SCH") == 0) {
-        return OP_SCH;
-    } else if (strcmp(instruction, "SWT") == 0) {
-        return OP_SWT;
-    } else if (strcmp(instruction, "KIL") == 0) {
-        return OP_KIL;
-    } else {
-        printf("Invalid instruction\n");
-        return SENTINEL_VALUE;
-    } */
 }
 
 uint16_t get_operand(const char* operand) {
@@ -97,7 +40,7 @@ uint16_t get_operand(const char* operand) {
 }
 
 void get_label(Labels **label_addresses, const char label[MAX_TOKEN_LEN + 1], const uint8_t current_token, uint8_t *current_size) {
-    struct Labels *labels = calloc(1, sizeof(Labels));
+    Labels *labels = calloc(1, sizeof(Labels));
     if (labels == NULL) {
         return;
     }
@@ -116,7 +59,8 @@ void get_label(Labels **label_addresses, const char label[MAX_TOKEN_LEN + 1], co
         *label_addresses = temp;
     }
     strcpy(labels->label, label);
-    labels->address = current_token/*(current_token == 0) ? 0 : (current_token - 1)*/;
+    //labels->address = (current_token == 0) ? 0 : (current_token - 1);
+    labels->address = current_token;
     memcpy(&((*label_addresses)[*current_size]), labels, sizeof(Labels));
     (*current_size)++;
     free(labels);
@@ -296,12 +240,12 @@ void parse(Instruction *instructions, const Token *tokens, const uint8_t *curren
     }
 }
 
-uint8_t *generate_code(Instruction *instructions, uint8_t instruction_count, const uint8_t *conf, size_t confSize) {
+uint8_t *generate_code(const Instruction *instructions, uint8_t instruction_count, const uint8_t *conf, size_t confSize) {
     uint8_t *code = calloc(MAX_CODE_LENGTH, sizeof(uint8_t));
     uint8_t current_pointer = 0;
 
     for (uint8_t i = 0; i < instruction_count; i++) {
-        uint8_t opcode = instructions[i].opcode;
+        const uint8_t opcode = instructions[i].opcode;
         uint8_t operand1;
         uint8_t operand2 = instructions[i].operand2;
         if (operand1_mode(opcode, conf, confSize) == 0) {
@@ -310,7 +254,7 @@ uint8_t *generate_code(Instruction *instructions, uint8_t instruction_count, con
             operand1 = ((uint16_t) instructions[i].operand2 & (uint16_t) 0xFF00) >> 8;
             operand2 = (uint16_t) instructions[i].operand2 & (uint16_t) 0x00FF;
         }
-        uint8_t num_ops = num_operands(opcode, conf, confSize);
+        const uint8_t num_ops = num_operands(opcode, conf, confSize);
 
         switch (num_ops) {
             case 0:
@@ -340,11 +284,11 @@ uint8_t *generate_code(Instruction *instructions, uint8_t instruction_count, con
 }
 
 uint8_t num_operands(uint8_t opcode, const uint8_t *conf, size_t confSize) {
-    uint8_t *num_ops = malloc(1 * sizeof(uint8_t));
+    uint8_t num_ops;
     for(int i = 0; i < (int) confSize; i+=6) {
-        num_ops[0] = conf[i+4];
+        num_ops = conf[i+4];
         if(conf[i] == opcode) {
-            return *num_ops;
+            return num_ops;
         }
     }
     return false;
@@ -385,11 +329,11 @@ uint8_t num_operands(uint8_t opcode, const uint8_t *conf, size_t confSize) {
 
 
 uint8_t operand1_mode(uint8_t opcode, const uint8_t *conf, size_t confSize) {
-    uint8_t *operand1_mode = malloc(1 * sizeof(uint8_t));
+    uint8_t operand1_mode;
     for (int i = 0; i < (int) confSize; i += 6) {
-        operand1_mode[0] = conf[i + 5];
+        operand1_mode = conf[i + 5];
         if (conf[i] == opcode) {
-            return *operand1_mode;
+            return operand1_mode;
         }
     }
     return false;
