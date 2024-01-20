@@ -1,6 +1,6 @@
 ; Keyboard lookup table subroutine
 ; Input: register 2
-; Uses registers: 1,
+; Uses registers: 0, 1
 ; Output: register 3
 NOP
 STO 0 #0
