@@ -15,5 +15,6 @@ ENI ; enable int
     LDM 2 #effb
     JSR #f0b0
     STM 3 #eff7
+    ENI
     BRN .WAIT
 HLT

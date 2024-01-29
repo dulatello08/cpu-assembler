@@ -5,8 +5,8 @@ STO 1 #f0
     PSH 0
     PSH 1
     RLD 3
-    ADD 0 #2
     BRR 2 3 #f0c8
+    ADD 0 #2
     BRN .LOOP
 ADD 0 #1
 PSH 0
