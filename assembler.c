@@ -22,10 +22,11 @@ void *realloc_zero(void *ptr, size_t old_size, size_t new_size) {
 
 uint8_t get_opcode(const char* instruction, const uint8_t* conf, size_t confSize) {
     printf("%s\n", instruction);
-    char *buffer = malloc(4 * sizeof(char));
+    char *buffer = malloc(5 * sizeof(char));
     for(int i = 0; i < (int) confSize; i+=6) {
-        memcpy(buffer, &(conf[i+1]), 3);
-        buffer[3] = '\0';
+        memcpy(buffer, &(conf[i+1]), 4);
+        buffer[4] = '\0';
+        //printf("%s %s\n", instruction, buffer);
         if (strcmp(instruction, buffer) == 0) {
             return conf[i];
         }
@@ -184,7 +185,13 @@ void parse(Instruction *instructions, const Token *tokens, const uint8_t *curren
         // Get the opcode for the instruction or label
         instructions->opcode = get_opcode(tokens[0].value, conf, confSize);
         // Check for operands
-        if (tokens[1].type == TYPE_REGISTER && tokens[2].type == TYPE_REGISTER && tokens[3].type == TYPE_OPERAND_2) {
+        if (tokens[1].type == TYPE_REGISTER && tokens[2].type == TYPE_REGISTER && tokens[3].type == TYPE_REGISTER && tokens[4].type == TYPE_REGISTER) {
+            instructions->operand_rd = get_operand(tokens[1].value);
+            instructions->operand_rn = get_operand(tokens[2].value);
+            instructions->operand2 = get_operand(tokens[4].value);
+            instructions->operand2 |= (get_operand(tokens[3].value) << 4);
+        }
+        else if (tokens[1].type == TYPE_REGISTER && tokens[2].type == TYPE_REGISTER && tokens[3].type == TYPE_OPERAND_2) {
             instructions->operand_rd = get_operand(tokens[1].value);
             instructions->operand_rn = get_operand(tokens[2].value);
             instructions->operand2 = get_operand(tokens[3].value);
@@ -286,7 +293,7 @@ uint8_t *generate_code(const Instruction *instructions, uint8_t instruction_coun
 uint8_t num_operands(uint8_t opcode, const uint8_t *conf, size_t confSize) {
     uint8_t num_ops;
     for(int i = 0; i < (int) confSize; i+=6) {
-        num_ops = conf[i+4];
+        num_ops = conf[i+5];
         if(conf[i] == opcode) {
             return num_ops;
         }
@@ -298,7 +305,7 @@ uint8_t num_operands(uint8_t opcode, const uint8_t *conf, size_t confSize) {
 uint8_t operand1_mode(uint8_t opcode, const uint8_t *conf, size_t confSize) {
     uint8_t operand1_mode;
     for (int i = 0; i < (int) confSize; i += 6) {
-        operand1_mode = conf[i + 5];
+        operand1_mode = conf[i + 6];
         if (conf[i] == opcode) {
             return operand1_mode;
         }

@@ -104,3 +104,6 @@
 - opcode: 0x21
   name: "ORR"
   num_ops: 2
+- opcode: 0x22
+  name: "MULL"
+  num_ops: 2

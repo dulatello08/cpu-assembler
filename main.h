@@ -17,7 +17,7 @@
 #include <arpa/inet.h>
 
 #define MAX_TOKEN_LEN 16
-#define MAX_INSTRUCTION_LEN 3
+#define MAX_INSTRUCTION_LEN 4
 #define SENTINEL_VALUE 255
 
 #define TYPE_OPCODE 1
