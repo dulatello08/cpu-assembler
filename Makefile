@@ -1,18 +1,23 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -Werror -O0 -I. -g
+# Compiler settings
+CXX = g++
+CXXFLAGS = -Wall -Wextra -std=c++17 -O2
+LDFLAGS =
 
-all: assembler
+# Project files
+SOURCES = main.cpp assembler.cpp conf_parser.cpp
+OBJECTS = $(SOURCES:.cpp=.o)
+EXECUTABLE = assembler
 
-assembler: main.o assembler.o
-	$(CC) $(CFLAGS) $^ -o assembler
+# Target rules
+all: $(EXECUTABLE)
 
-main.o: main.c
-	$(CC) $(CFLAGS) -c main.c -o main.o
+$(EXECUTABLE): $(OBJECTS)
+	$(CXX) $(LDFLAGS) -o $@ $^
 
-assembler.o: assembler.c
-	$(CC) $(CFLAGS) -c assembler.c -o assembler.o
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f *.o assembler
+	rm -f $(OBJECTS) $(EXECUTABLE)
 
 .PHONY: all clean
