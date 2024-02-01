@@ -117,15 +117,15 @@ int main(int argc, char **argv) {
     uint8_t *outputArray = malloc(num_opcodes * 7 * sizeof(uint8_t));
     for (int i = 0; i < num_opcodes; i++) {
         printf("%s: 0x%02X, Num_ops: %d, Op1_mode: %d\n", opcodes[i].name, opcodes[i].opcode, opcodes[i].num_ops, opcodes[i].op1_mode);
-        outputArray[i * 6] = opcodes[i].opcode;
-        outputArray[i * 6 + 1] = opcodes[i].name[0];
-        outputArray[i * 6 + 2] = opcodes[i].name[1];
-        outputArray[i * 6 + 3] = opcodes[i].name[2];
-        outputArray[i * 6 + 4] = opcodes[i].name[3];
-        outputArray[i * 6 + 5] = opcodes[i].num_ops;
-        outputArray[i * 6 + 6] = opcodes[i].op1_mode;
+        outputArray[i * 7] = opcodes[i].opcode;
+        outputArray[i * 7 + 1] = opcodes[i].name[0];
+        outputArray[i * 7 + 2] = opcodes[i].name[1];
+        outputArray[i * 7 + 3] = opcodes[i].name[2];
+        outputArray[i * 7 + 4] = opcodes[i].name[3];
+        outputArray[i * 7 + 5] = opcodes[i].num_ops;
+        outputArray[i * 7 + 6] = opcodes[i].op1_mode;
     }
-    fwrite(outputArray, sizeof(uint8_t), num_opcodes * 6, outputFile);
+    fwrite(outputArray, sizeof(uint8_t), num_opcodes * 7, outputFile);
     free(outputArray);
 
     // Cleanup

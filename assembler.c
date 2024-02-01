@@ -22,10 +22,11 @@ void *realloc_zero(void *ptr, size_t old_size, size_t new_size) {
 
 uint8_t get_opcode(const char* instruction, const uint8_t* conf, size_t confSize) {
     printf("%s\n", instruction);
-    char *buffer = malloc(5 * sizeof(char));
-    for(int i = 0; i < (int) confSize; i+=6) {
+    char *buffer = malloc(6 * sizeof(char));
+    for(int i = 0; i < (int) confSize; i+=7) {
         memcpy(buffer, &(conf[i+1]), 4);
-        buffer[4] = '\0';
+        if (buffer[4] == 'L') buffer[5] = '\0';
+        else buffer[4] = '\0';
         //printf("%s %s\n", instruction, buffer);
         if (strcmp(instruction, buffer) == 0) {
             return conf[i];
@@ -292,8 +293,8 @@ uint8_t *generate_code(const Instruction *instructions, uint8_t instruction_coun
 
 uint8_t num_operands(uint8_t opcode, const uint8_t *conf, size_t confSize) {
     uint8_t num_ops;
-    for(int i = 0; i < (int) confSize; i+=6) {
-        num_ops = conf[i+5];
+    for(int i = 0; i < (int) confSize; i+=7) {
+        num_ops = conf[i+6];
         if(conf[i] == opcode) {
             return num_ops;
         }
@@ -304,8 +305,8 @@ uint8_t num_operands(uint8_t opcode, const uint8_t *conf, size_t confSize) {
 
 uint8_t operand1_mode(uint8_t opcode, const uint8_t *conf, size_t confSize) {
     uint8_t operand1_mode;
-    for (int i = 0; i < (int) confSize; i += 6) {
-        operand1_mode = conf[i + 6];
+    for (int i = 0; i < (int) confSize; i += 7) {
+        operand1_mode = conf[i + 7];
         if (conf[i] == opcode) {
             return operand1_mode;
         }
