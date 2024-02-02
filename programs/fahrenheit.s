@@ -1,10 +1,16 @@
-NOP ; estimate celsius from fahrenheit temp.
-STO 0 #64
-SUB 0 #20
-STO 1 #6f
-MULL 0 1 0 1
-STM 1 #ff
-RSH 1 #2
-MUL 1 #5 ;should have result here now
-STM 1 #ff
-HLT
+; Fahrenheit to celsius converter
+.setcpu "NeoCore"
+.global _start
+TO_SUBTRACT = $20
+._start
+    STO 0 #64
+    SUB 0 TO_SUBTRACT ; use macro here
+    STO 1 #6f ; use immediate here
+    MULL 0 1 0 1 ; all of 4 operands are registers
+    STM 1 #ff ; dont use macro here while could
+    RSH 1 #2
+    MUL 1 #5 ;should have result here now
+    STM 1 #0b11111111 ; use binary format, can also be ascii character or decimal but by default is hex
+    BRN _halt
+._halt
+    HLT

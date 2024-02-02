@@ -1,10 +1,10 @@
 # Compiler settings
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++17 -O2
+CXXFLAGS = -Wall -Wextra -std=c++17 -O2 -I.
 LDFLAGS =
 
 # Project files
-SOURCES = main.cpp assembler.cpp conf_parser.cpp
+SOURCES = main.cpp assembler.cpp conf_parser.cpp lexer.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 EXECUTABLE = assembler
 

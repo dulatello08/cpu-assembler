@@ -11,6 +11,7 @@
 #include <string>
 #include <getopt.h>
 #include <cstdint>
+#include <lexer.h>
 
 int main(int argc, char* argv[]) {
     std::string input_filename;
@@ -72,6 +73,19 @@ int main(int argc, char* argv[]) {
     while (std::getline(input_file, line)) {
         lines.push_back(line);
     }
+
+    auto lexer = new Lexer();
+
+    lexer->firstPass(lines);
+    printf("Label Table:\n");
+    printf("------------\n");
+
+    // Iterate through the map and print each key-value pair
+    for (const auto& entry : lexer->labelTable) {
+        printf("Label: %-20s | Value: %d\n", entry.first.c_str(), entry.second);
+    }
+
+    delete lexer;
 
     // Your processing logic here
 
