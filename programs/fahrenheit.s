@@ -1,7 +1,7 @@
 ; Fahrenheit to celsius converter
 .setcpu "NeoCore"
 .global _start
-TO_SUBTRACT = $20
+TO_SUBTRACT = $0x20
 ._start
     STO 0 #64
     SUB 0 TO_SUBTRACT ; use macro here

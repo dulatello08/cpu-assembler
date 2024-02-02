@@ -43,10 +43,12 @@ class Lexer {
     std::regex binaryPattern;
     std::regex decimalPattern;
     std::regex commentPattern;
+    std::regex macroPattern;
 
 public:
     Lexer();
     std::map<std::string, int> labelTable;
+    std::map<std::string, int> macroTable; // For macros
 
     void firstPass(const std::vector<std::string>& lines);
 

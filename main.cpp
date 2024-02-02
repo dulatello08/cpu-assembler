@@ -85,6 +85,14 @@ int main(int argc, char* argv[]) {
         printf("Label: %-20s | Value: %d\n", entry.first.c_str(), entry.second);
     }
 
+    printf("Macro Table:\n");
+    printf("------------\n");
+
+    // Iterate through the map and print each key-value pair
+    for (const auto& entry : lexer->macroTable) {
+        printf("Macro: %-20s | Value: %d\n", entry.first.c_str(), entry.second);
+    }
+
     delete lexer;
 
     // Your processing logic here
