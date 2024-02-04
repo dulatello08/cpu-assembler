@@ -2,10 +2,11 @@
 .setcpu "NeoCore"
 .global _start
 TO_SUBTRACT = $0x20
+MULTIPLICATIVE_I = $0x6f
 ._start
     STO 0 #64
-    SUB 0 TO_SUBTRACT ; use macro here
-    STO 1 #6f ; use immediate here
+    SUB 0 $TO_SUBTRACT ; use macro here
+    STO 1 $MULTIPLICATIVE_I ; same
     MULL 0 1 0 1 ; all of 4 operands are registers
     STM 1 #ff ; dont use macro here while could
     RSH 1 #2

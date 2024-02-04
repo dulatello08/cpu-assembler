@@ -93,6 +93,10 @@ int main(int argc, char* argv[]) {
         printf("Macro: %-20s | Value: %d\n", entry.first.c_str(), entry.second);
     }
 
+    lexer->lex(lines);
+     for (const auto& token : lexer->tokens) {
+         std::cout << "Token: Type = " << static_cast<int>(token.type) << ", Lexeme = " << token.lexeme << ", Line = " << token.line << std::endl;
+     }
     delete lexer;
 
     // Your processing logic here
