@@ -30,6 +30,8 @@ class Lexer {
     std::regex labelPattern;
     std::regex macroPattern;
     std::regex instructionPattern;
+    std::regex commentPattern;
+    std::regex operandPattern;
 
 public:
     Lexer();
