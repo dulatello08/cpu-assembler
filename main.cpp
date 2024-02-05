@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
     //
     lexer->lex(lines);
     for (const auto& token : lexer->tokens) {
-        std::cout << "Token: Type = " << static_cast<int>(token.type) << ", Lexeme = " << token.lexeme << ", Line = " << token.line << std::endl;
+        std::cout << "Token: Type = " << static_cast<int>(token.type) << ", Lexeme = " << token.lexeme << ", Line = " << token.data << std::endl;
     }
     delete lexer;
 

@@ -12,7 +12,8 @@
 enum class TokenType {
     Label,
     Instruction,
-    Operand,
+    Register,
+    Operand2,
     Unknown
 };
 
@@ -20,10 +21,10 @@ class Token {
 public:
     TokenType type;
     std::string lexeme;
-    int line;
+    uint16_t data;
 
-    Token(TokenType type, std::string  lexeme, int line)
-        : type(type), lexeme(std::move(lexeme)), line(line) {}
+    Token(TokenType type, std::string  lexeme, uint16_t data)
+        : type(type), lexeme(std::move(lexeme)), data(data) {}
 };
 
 class Lexer {
@@ -42,6 +43,7 @@ public:
     void firstPass(std::vector<std::string> &lines);
 
     void lex(const std::vector<std::string>& lines);
+    void classifyAndCreateToken(const std::string& operand);
 };
 
 #endif //LEXER_H
