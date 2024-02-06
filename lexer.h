@@ -8,31 +8,14 @@
 #include <map>
 #include <regex>
 #include <string>
-
-enum class TokenType {
-    Label,
-    Instruction,
-    Register,
-    Operand2,
-    Unknown
-};
-
-class Token {
-public:
-    TokenType type;
-    std::string lexeme;
-    uint16_t data;
-
-    Token(TokenType type, std::string  lexeme, uint16_t data)
-        : type(type), lexeme(std::move(lexeme)), data(data) {}
-};
+#include "main.h"
 
 class Lexer {
     std::regex labelPattern;
     std::regex macroPattern;
     std::regex instructionPattern;
-    std::regex commentPattern;
     std::regex operandPattern;
+    std::regex commentPattern;
 
 public:
     Lexer();

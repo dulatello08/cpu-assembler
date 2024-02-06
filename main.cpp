@@ -77,17 +77,8 @@ int main(int argc, char* argv[]) {
     auto lexer = new Lexer();
 
     lexer->firstPass(lines);
-
-    // printf("Label Table:\n");
-    // printf("------------\n");
-    //
-    // // Iterate through the map and print each key-value pair
-    // for (const auto& entry : lexer->labelTable) {
-    //     printf("Label: %-20s | Value: %d\n", entry.first.c_str(), entry.second);
-    // }
-    //
-    //
     lexer->lex(lines);
+
     for (const auto& token : lexer->tokens) {
         std::cout << "Token: Type = " << static_cast<int>(token.type) << ", Lexeme = " << token.lexeme << ", Line = " << token.data << std::endl;
     }

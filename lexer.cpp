@@ -5,8 +5,8 @@
 #include "lexer.h"
 #include <iostream>
 
-uint16_t parseOperand(const std::string& operand) {
-    if (operand.length() < 1) {
+auto parseOperand(const std::string& operand) -> uint16_t {
+    if (operand.empty()) {
         throw std::invalid_argument("Operand too short");
     }
 
@@ -81,9 +81,8 @@ void Lexer::firstPass(std::vector<std::string> &lines) {
 
 void Lexer::lex(const std::vector<std::string>& lines) {
     std::regex operandPattern(R"(\s+([^;,\s]+))"); // Matches operands and registers.
-    int lineNum = 0;
     for (const auto& line : lines) {
-        std::cout << "Processing line " << lineNum << ": " << line << std::endl;
+        //std::cout << "Processing line " << lineNum << ": " << line << std::endl;
 
         // Remove comments from the line to simplify parsing.
         std::string processedLine = std::regex_replace(line, commentPattern, "");
@@ -92,7 +91,7 @@ void Lexer::lex(const std::vector<std::string>& lines) {
         // Try to match an instruction at the beginning of the line.
         if (std::regex_search(processedLine, match, instructionPattern) && match.size() > 1) {
             tokens.emplace_back(TokenType::Instruction, match[1].str(), 0);
-            std::cout << "Found instruction: " << match[1].str() << std::endl;
+            //std::cout << "Found instruction: " << match[1].str() << std::endl;
             // Assuming the instruction has already been matched and processed here
             auto operandsStart = match[0].length();
             auto operandsStr = processedLine.substr(operandsStart);
@@ -107,7 +106,6 @@ void Lexer::lex(const std::vector<std::string>& lines) {
                 ++iter;
             }
         }
-        lineNum++;
     }
 }
 
@@ -123,12 +121,12 @@ void Lexer::classifyAndCreateToken(const std::string& operand) {
     } else {
         tokens.emplace_back(TokenType::Unknown, operand, 0);
     }
-    std::cout << "Found operand: " << operand << " as ";
-    switch (tokens.back().type) {
-        case TokenType::Register: std::cout << "Register"; break;
-        case TokenType::Operand2: std::cout << "Operand2"; break;
-        case TokenType::Label: std::cout << "Label"; break;
-        default: std::cout << "Unknown";
-    }
-    std::cout << std::endl;
+    // std::cout << "Found operand: " << operand << " as ";
+    // switch (tokens.back().type) {
+    //     case TokenType::Register: std::cout << "Register"; break;
+    //     case TokenType::Operand2: std::cout << "Operand2"; break;
+    //     case TokenType::Label: std::cout << "Label"; break;
+    //     default: std::cout << "Unknown";
+    // }
+    // std::cout << std::endl;
 }
