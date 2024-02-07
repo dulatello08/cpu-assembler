@@ -5,6 +5,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 #include <main.h>
+#include <utility>
 #include <vector>
 #include <memory>
 #include <cstdint>
@@ -31,8 +32,8 @@ private:
     std::vector<uint8_t> object_code; // The resultant object code in big endian format
 
 public:
-    Parser(const std::vector<Token>& tokens, const Metadata& metadata)
-        : tokens(tokens), metadata(metadata) {}
+    Parser(const std::vector<Token>& tokens, Metadata  metadata)
+        : tokens(tokens), metadata(std::move(metadata)) {}
 
     void parse() {
         // Implement the parsing logic here.
