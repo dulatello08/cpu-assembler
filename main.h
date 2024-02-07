@@ -5,6 +5,8 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#include <string>
+
 enum class TokenType {
     Label,
     Instruction,

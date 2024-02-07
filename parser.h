@@ -1,9 +1,10 @@
 //
-// Created by Dulat S on 2/6/24.
+// Created by gitpod on 2/7/24.
 //
 
-#ifndef PARSER_H
-#define PARSER_H
+#ifndef CPU_ASSEMBLER_PARSER_H
+#define CPU_ASSEMBLER_PARSER_H
+
 #include <main.h>
 #include <utility>
 #include <vector>
@@ -33,13 +34,10 @@ private:
 
 public:
     Parser(const std::vector<Token>& tokens, Metadata  metadata)
-        : tokens(tokens), metadata(std::move(metadata)) {}
+            : tokens(tokens), metadata(std::move(metadata)) {}
 
-    void parse() {
-        // Implement the parsing logic here.
-        // This method should fill the relocationTable and prepare objectCode based on the tokens.
-    }
-
+    void parse();
+    static void processToken(const Token& token);
     [[nodiscard]] const std::vector<RelocationEntry>& getRelocationTable() const {
         return relocation_table;
     }
@@ -59,4 +57,4 @@ public:
     // Additional methods to handle parsing and relocation can be added here.
 };
 
-#endif //PARSER_H
+#endif //CPU_ASSEMBLER_PARSER_H

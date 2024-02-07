@@ -1,28 +1,13 @@
 //
-// Created by Dulat S on 2/6/24.
+// Created by gitpod on 2/7/24.
 //
 
 #include "parser.h"
 
-Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens), machineCode(nullptr), machineCodeSize(0) {}
-
 void Parser::parse() {
-    // Initialize machine code array, determine size based on tokens if needed
-    // For simplicity, let's assume we allocate a fixed size for demonstration purposes
-    machineCodeSize = 1024; // Example size, adjust based on actual needs
-    machineCode.reset(new uint8_t[machineCodeSize]);
-
     for (const auto& token : tokens) {
         processToken(token);
     }
-}
-
-std::shared_ptr<uint8_t[]> Parser::getMachineCode() const {
-    return machineCode;
-}
-
-size_t Parser::getMachineCodeSize() const {
-    return machineCodeSize;
 }
 
 void Parser::processToken(const Token& token) {
@@ -36,12 +21,12 @@ void Parser::processToken(const Token& token) {
             break;
         case TokenType::Label:
             // Handle label
-                handleRelocation(token);
-        break;
+            handleRelocation(token);
+            break;
         case TokenType::Unknown:
-            default:
-                // Handle unknown token type
-                break;
+        default:
+            // Handle unknown token type
+            break;
     }
 }
 
