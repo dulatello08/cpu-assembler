@@ -31,13 +31,17 @@ private:
     Metadata metadata;
     std::vector<RelocationEntry> relocation_table;
     std::vector<uint8_t> object_code; // The resultant object code in big endian format
+    void addRelocationEntry(const std::string& label, uint16_t address) {
+        relocation_table.push_back(RelocationEntry{label, address});
+    }
 
 public:
-    Parser(const std::vector<Token>& tokens, Metadata  metadata)
+    Parser(const std::vector<Token>& tokens, Metadata metadata)
             : tokens(tokens), metadata(std::move(metadata)) {}
 
     void parse();
     static void processToken(const Token& token);
+
     [[nodiscard]] const std::vector<RelocationEntry>& getRelocationTable() const {
         return relocation_table;
     }
@@ -50,11 +54,7 @@ public:
         object_code.push_back(byte);
     }
 
-    void addRelocationEntry(const std::string& label, uint16_t address) {
-        relocation_table.push_back(RelocationEntry{label, address});
-    }
-
-    // Additional methods to handle parsing and relocation can be added here.
+    static void handleRelocation(const Token &token);
 };
 
 #endif //CPU_ASSEMBLER_PARSER_H
