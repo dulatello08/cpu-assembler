@@ -84,6 +84,8 @@ int main(int argc, char* argv[]) {
     }
     delete lexer;
 
+    printf("Instruction: HLT %x\n", getOpCode("HLT", conf));
+
     // Your processing logic here
 
     return 0;
