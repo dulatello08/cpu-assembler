@@ -6,6 +6,7 @@
 #define MAIN_H
 
 #include <string>
+#include <ctime>
 #define HASH_TABLE_SIZE 1024 // 1KB
 #define PRIME_FACTOR 101      // Prime factor for the hash calculation
 #define MIX_FACTOR 137       // Mix factor to enhance distribution
@@ -33,6 +34,12 @@ enum class TokenType {
     Unknown
 };
 
+typedef struct {
+    std::string compiler_version;
+    std::string date_of_compilation;
+    std::string source_file_name;
+} Metadata;
+
 class Token {
 public:
     TokenType type;
@@ -45,6 +52,20 @@ public:
 
 inline uint8_t getOpCode(const std::string& instruction, std::vector<uint8_t> conf) {
     return conf.at(hash_function(instruction.c_str()));
+}
+
+inline time_t get_compile_unix_time() {
+    const char *compile_date = __DATE__; // "Mmm dd yyyy"
+    const char *compile_time = __TIME__; // "hh:mm:ss"
+
+    struct tm tm{};
+    strptime(compile_date, "%b %d %Y", &tm);
+    sscanf(compile_time, "%d:%d:%d", &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
+
+    // Set the fields not set by strptime.
+    tm.tm_isdst = -1;  // Not dealing with daylight saving time
+
+    return mktime(&tm); // Convert to Unix time
 }
 
 #endif //MAIN_H

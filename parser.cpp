@@ -15,6 +15,8 @@ void Parser::processToken(const Token& token) {
     // Adjusted switch statement to combine consecutive identical branches
     switch (token.type) {
         case TokenType::Instruction:
+            addObjectCodeByte(getOpCode(token.lexeme, ))
+            break;
         case TokenType::Register:
         case TokenType::Operand2:
             // Combined processing for Instruction, Register, and Operand2

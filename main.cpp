@@ -12,6 +12,7 @@
 #include <getopt.h>
 #include <cstdint>
 #include <lexer.h>
+#include <parser.h>
 
 int main(int argc, char* argv[]) {
     std::string input_filename;
@@ -82,6 +83,13 @@ int main(int argc, char* argv[]) {
     for (const auto& token : lexer->tokens) {
         std::cout << "Token: Type = " << static_cast<int>(token.type) << ", Lexeme = " << token.lexeme << ", Line = " << token.data << std::endl;
     }
+    Metadata metadata = {
+        "0.1",
+        
+    };
+
+    auto parser = new Parser()
+
     delete lexer;
 
     printf("Instruction: HLT %x\n", getOpCode("HLT", conf));
