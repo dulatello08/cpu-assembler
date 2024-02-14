@@ -85,18 +85,13 @@ uint16_t parseOperand(const std::string& operand) {
     return parseHexadecimal(operand);
 }
 
-Lexer::Lexer()
-        : labelPattern(R"(^\.(\S+))"),
-          macroPattern(R"(^([A-Za-z_]\w*)\s*=\s*\$([0-9A-Xa-x]+))"),
-          instructionPattern(R"(^\s*([A-Z]{3,}))"), // Matches instruction mnemonics.
-          operandPattern(R"(\s+([^;,\s]+))"), // Matches operands and registers.
-          commentPattern(";.*$") // Matches comments for removal.
-{}
-
 void Lexer::firstPass(std::vector<std::string> &lines) {
     int lineNum = 0;
+    uint16_t address = 0;
     for (auto& line : lines) {
         std::smatch match;
+
+        std::cout << line << std::endl;
         // Check for macros first
         if (std::regex_match(line, match, macroPattern)) {
             macroTable[match.str(1)] = static_cast<int>(std::strtoul(match.str(2).c_str(), nullptr, 0));
@@ -104,6 +99,7 @@ void Lexer::firstPass(std::vector<std::string> &lines) {
         }
         // Then check for labels
         else if (std::regex_match(line, match, labelPattern)) {
+            address++;
             labelTable[match.str(1)] = lineNum;
         }
         else {
@@ -115,6 +111,13 @@ void Lexer::firstPass(std::vector<std::string> &lines) {
                 line = std::regex_replace(line, searchPattern, hexStr);
             }
         }
+        std::string processedLine = std::regex_replace(line, commentPattern, "");
+        std::smatch match1;
+        if (std::regex_search(processedLine, match1, instructionPattern) && match1.size() > 1) {
+            address += getNumOps(match1[1].str(), conf) + 1;
+        }
+
+        lineNumberToAddressMap[lineNum] = address;
         lineNum++;
     }
 }
@@ -122,7 +125,11 @@ void Lexer::firstPass(std::vector<std::string> &lines) {
 
 void Lexer::lex(const std::vector<std::string>& lines) {
     std::regex operandPattern(R"(\s+([^;,\s]+))"); // Matches operands and registers.
+    for (const auto& pair : lineNumberToAddressMap) {
+        std::cout << "Key: " << pair.first << ", Value: " << pair.second << std::endl;
+    }
     for (const auto& line : lines) {
+
         //std::cout << "Processing line " << lineNum << ": " << line << std::endl;
 
         // Remove comments from the line to simplify parsing.
@@ -146,6 +153,8 @@ void Lexer::lex(const std::vector<std::string>& lines) {
                 }
                 ++iter;
             }
+        } else if (std::regex_match(processedLine, match, labelPattern)) {
+            tokens.emplace_back(TokenType::Instruction, "NOP", 0);
         }
     }
 }
@@ -158,7 +167,7 @@ void Lexer::classifyAndCreateToken(const std::string& operand) {
     } else if (std::regex_match(operand, std::regex(R"(^[a-zA-Z_][a-zA-Z_0-9]*$)"))) { // Label
         //get label line number
         auto labelLineNum = static_cast<uint16_t>(labelTable[operand]);
-        tokens.emplace_back(TokenType::Label, operand, labelLineNum);
+        tokens.emplace_back(TokenType::Label, operand, lineNumberToAddressMap[labelLineNum]);
     } else {
         tokens.emplace_back(TokenType::Unknown, operand, 0);
     }

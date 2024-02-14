@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
         lines.push_back(line);
     }
 
-    auto lexer = new Lexer();
+    auto lexer = new Lexer(conf);
 
     lexer->firstPass(lines);
     lexer->lex(lines);
@@ -109,9 +109,6 @@ int main(int argc, char* argv[]) {
     }
 
     delete lexer;
-
-    printf("Instruction: HLT %x\n", getOpCode("HLT", conf));
-
     // Your processing logic here
 
     return 0;

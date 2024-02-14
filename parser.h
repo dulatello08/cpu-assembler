@@ -55,7 +55,7 @@ public:
         return object_code;
     }
 
-    static void handleRelocation(const Token &token);
+    void handleRelocation(const Token &token);
 };
 
 #endif //CPU_ASSEMBLER_PARSER_H
