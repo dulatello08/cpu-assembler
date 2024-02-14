@@ -7,6 +7,8 @@
 
 #include <string>
 #include <ctime>
+#include <vector>
+
 #define HASH_TABLE_SIZE 1024 // 1KB
 #define PRIME_FACTOR 101      // Prime factor for the hash calculation
 #define MIX_FACTOR 137       // Mix factor to enhance distribution
@@ -34,12 +36,6 @@ enum class TokenType {
     Unknown
 };
 
-typedef struct {
-    std::string compiler_version;
-    std::string date_of_compilation;
-    std::string source_file_name;
-} Metadata;
-
 class Token {
 public:
     TokenType type;
@@ -52,6 +48,14 @@ public:
 
 inline uint8_t getOpCode(const std::string& instruction, std::vector<uint8_t> conf) {
     return conf.at(hash_function(instruction.c_str()));
+}
+
+inline uint8_t getNumOps(const std::string& instruction, std::vector<uint8_t> conf) {
+    return conf.at(hash_function(instruction.c_str()) + 1);
+}
+
+inline uint8_t getOp1Mode(const std::string& instruction, std::vector<uint8_t> conf) {
+    return conf.at(hash_function(instruction.c_str()) + 2);
 }
 
 inline time_t get_compile_unix_time() {

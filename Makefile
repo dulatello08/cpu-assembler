@@ -4,7 +4,7 @@ CXXFLAGS = -Wall -Wextra -std=c++17 -O2 -I.
 LDFLAGS =
 
 # Project files
-SOURCES = main.cpp assembler.cpp conf_parser.cpp lexer.cpp parser.cpp
+SOURCES = main.cpp assembler.cpp lexer.cpp parser.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 EXECUTABLE = assembler
 

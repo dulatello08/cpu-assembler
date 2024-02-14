@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <lexer.h>
 #include <parser.h>
+#include <iomanip>
 
 int main(int argc, char* argv[]) {
     std::string input_filename;
@@ -81,14 +82,31 @@ int main(int argc, char* argv[]) {
     lexer->lex(lines);
 
     for (const auto& token : lexer->tokens) {
-        std::cout << "Token: Type = " << static_cast<int>(token.type) << ", Lexeme = " << token.lexeme << ", Line = " << token.data << std::endl;
+        std::cout << "Token: Type = " << static_cast<int>(token.type) << ", Lexeme = " << token.lexeme << ", Data/Line = " << token.data << std::endl;
     }
-    Metadata metadata = {
+    Parser::Metadata metadata = {
         "0.1",
-        
+        get_compile_unix_time(),
+        input_filename
     };
 
-    auto parser = new Parser()
+    auto parser = new Parser(lexer->tokens, metadata, conf);
+
+    parser->parse();
+
+    // Iterate through the vector and print each element in hex
+    for (size_t i = 0; i < parser->getObjectCode().size(); ++i) {
+        // Print the element in hex format
+        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(parser->getObjectCode()[i]);
+
+        // Formatting: add a space after every byte for readability
+        std::cout << " ";
+
+        // Optional: Add a new line every 16 bytes to mimic traditional hex dump format
+        if ((i + 1) % 16 == 0) {
+            std::cout << "\n";
+        }
+    }
 
     delete lexer;
 

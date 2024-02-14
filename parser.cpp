@@ -6,24 +6,34 @@
 #include "parser.h"
 
 void Parser::parse() {
-    for (const auto& token : tokens) {
-        processToken(token);
+    for (currentTokenIndex = 0; currentTokenIndex < tokens.size(); ++currentTokenIndex) {
+        // Ensure that you do not access tokens out of bounds
+        if (!tokens.empty()) {
+            processToken(tokens[currentTokenIndex]);
+        }
     }
 }
 
 void Parser::processToken(const Token& token) {
-    // Adjusted switch statement to combine consecutive identical branches
+    // Implementation remains the same, just ensure any vector access checks for size
     switch (token.type) {
         case TokenType::Instruction:
-            addObjectCodeByte(getOpCode(token.lexeme, ))
+            addObjectCodeByte(getOpCode(token.lexeme, conf));
             break;
-        case TokenType::Register:
+        case TokenType::Register: {
+            uint16_t packedRegisters = token.data << 4; // Assume upper 4 bits for first register
+            // Safely check if next token exists and is a Register
+            if (currentTokenIndex + 1 < tokens.size() && tokens[currentTokenIndex + 1].type == TokenType::Register) {
+                const auto& nextToken = tokens[++currentTokenIndex]; // Safely move to next token
+                packedRegisters |= (nextToken.data & 0xF); // Assume lower 4 bits for second register
+            }
+            addObjectCodeByte(packedRegisters);
+            break;
+        }
         case TokenType::Operand2:
-            // Combined processing for Instruction, Register, and Operand2
-            // Assuming these should be handled the same way. Adjust as necessary.
+
             break;
         case TokenType::Label:
-            // Handle label
             handleRelocation(token);
             break;
         case TokenType::Unknown:

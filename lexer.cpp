@@ -5,44 +5,85 @@
 #include "lexer.h"
 #include <iostream>
 
-auto parseOperand(const std::string& operand) -> uint16_t {
+#include <stdexcept>
+#include <string>
+#include <cctype>
+#include <cstdint>
+#include <cstring>
+
+uint16_t parseHexadecimal(const std::string& operand) {
+    unsigned long result = std::strtoul(operand.c_str(), nullptr, 16);
+    if (result > 0xFFFF) {
+        throw std::out_of_range("Hexadecimal value out of uint16_t range");
+    }
+    return static_cast<uint16_t>(result);
+}
+
+uint16_t parseDecimal(const std::string& operand) {
+    unsigned long result = std::strtoul(operand.c_str(), nullptr, 10);
+    if (result > 0xFFFF) {
+        throw std::out_of_range("Decimal value out of uint16_t range");
+    }
+    return static_cast<uint16_t>(result);
+}
+
+uint16_t parseBinary(const std::string& operand) {
+    unsigned long result = std::strtoul(operand.c_str(), nullptr, 2);
+    if (result > 0xFFFF) {
+        throw std::out_of_range("Binary value out of uint16_t range");
+    }
+    return static_cast<uint16_t>(result);
+}
+
+uint16_t parseOctal(const std::string& operand) {
+    unsigned long result = std::strtoul(operand.c_str(), nullptr, 8);
+    if (result > 0xFFFF) {
+        throw std::out_of_range("Octal value out of uint16_t range");
+    }
+    return static_cast<uint16_t>(result);
+}
+
+uint16_t parseAscii(const std::string& operand) {
+    if (operand.length() > 4) {
+        throw std::invalid_argument("Invalid ASCII format length");
+    }
+    uint16_t result = 0;
+    for (size_t i = 0; i < operand.length(); ++i) {
+        result |= (static_cast<uint16_t>(operand[i]) << ((operand.length() - i - 1) * 8));
+    }
+    return result;
+}
+
+uint16_t parseOperand(const std::string& operand) {
     if (operand.empty()) {
         throw std::invalid_argument("Operand too short");
     }
 
-    // Determine the format based on the prefix
-    if (operand[0] == '0') {
+    if (operand[0] == '0' && operand.size() > 2) {
         switch (operand[1]) {
-            case 'x': // Hexadecimal
+            case 'x':
             case 'X':
-                return static_cast<uint16_t>(std::strtoul(operand.substr(2).c_str(), nullptr, 16));
-            case 'd': // Decimal
+                return parseHexadecimal(operand.substr(2));
+            case 'd':
             case 'D':
-                return static_cast<uint16_t>(std::strtoul(operand.substr(2).c_str(), nullptr, 10));
-            case 'b': // Binary
+                return parseDecimal(operand.substr(2));
+            case 'b':
             case 'B':
-                // Custom binary parsing needed as std::strtoul doesn't support '0b' prefix
-                return static_cast<uint16_t>(std::strtoul(operand.substr(2).c_str(), nullptr, 2));
-            case 'c': // ASCII characters
-            case 'C': {
-                if (operand.length() == 3) {
-                    // Single character
-                    return static_cast<uint16_t>(operand[2]);
-                }
-                if (operand.length() == 4) {
-                    // Two characters, big endian
-                    return static_cast<uint16_t>((operand[2] << 8) | operand[4]);
-                }
-                throw std::invalid_argument("Invalid ASCII format");
-            }
+                return parseBinary(operand.substr(2));
+            case 'o':
+            case 'O':
+                return parseOctal(operand.substr(2));
+            case 'c':
+            case 'C':
+                return parseAscii(operand.substr(2));
             default:
                 throw std::invalid_argument("Unknown format specifier");
         }
     }
-    // No format specifier - assume hexadecimal
-    return static_cast<uint16_t>(std::strtoul(operand.c_str(), nullptr, 16));
-}
 
+    // Default to hexadecimal if no other format specifier is provided
+    return parseHexadecimal(operand);
+}
 
 Lexer::Lexer()
         : labelPattern(R"(^\.(\S+))"),

@@ -17,7 +17,7 @@ class Parser {
 public:
     struct Metadata {
         std::string compiler_version;
-        std::string date_of_compilation;
+        time_t date_of_compilation;
         std::string source_file_name;
     };
 
@@ -28,6 +28,7 @@ public:
 
 private:
     std::vector<Token> tokens;
+    size_t currentTokenIndex = 0;
     Metadata metadata;
     std::vector<RelocationEntry> relocation_table;
     std::vector<uint8_t> object_code; // The resultant object code in big endian format
@@ -44,7 +45,7 @@ public:
             : tokens(tokens), metadata(std::move(metadata)), conf(std::move(conf)){}
 
     void parse();
-    static void processToken(const Token& token);
+    void processToken(const Token& token);
 
     [[nodiscard]] const std::vector<RelocationEntry>& getRelocationTable() const {
         return relocation_table;
