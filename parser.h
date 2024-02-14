@@ -24,18 +24,18 @@ public:
     struct RelocationEntry {
         std::string label;
         uint16_t address; // Address is relative to 0x0
+
+        // Add a constructor that takes two arguments
+        RelocationEntry(std::string label, uint16_t address)
+            : label(std::move(label)), address(address) {}
     };
 
 private:
     std::vector<Token> tokens;
     size_t currentTokenIndex = 0;
     Metadata metadata;
-    std::vector<RelocationEntry> relocation_table;
     std::vector<uint8_t> object_code; // The resultant object code in big endian format
     std::vector<uint8_t> conf;
-    void addRelocationEntry(const std::string& label, uint16_t address) {
-        relocation_table.push_back(RelocationEntry{label, address});
-    }
     void addObjectCodeByte(uint8_t byte) {
         object_code.push_back(byte);
     }
@@ -46,10 +46,6 @@ public:
 
     void parse();
     void processToken(const Token& token);
-
-    [[nodiscard]] const std::vector<RelocationEntry>& getRelocationTable() const {
-        return relocation_table;
-    }
 
     [[nodiscard]] const std::vector<uint8_t>& getObjectCode() const {
         return object_code;

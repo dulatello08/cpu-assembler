@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <lexer.h>
 #include <parser.h>
+#include <object_file_generator.h>
 #include <iomanip>
 
 int main(int argc, char* argv[]) {
@@ -84,6 +85,14 @@ int main(int argc, char* argv[]) {
     for (const auto& token : lexer->tokens) {
         std::cout << "Token: Type = " << static_cast<int>(token.type) << ", Lexeme = " << token.lexeme << ", Data/Line = " << token.data << std::endl;
     }
+
+    std::vector<Parser::RelocationEntry> relocation_entries;
+
+    relocation_entries.reserve(lexer->labelTable.size());
+    for (auto pair: lexer->labelTable) {
+        relocation_entries.emplace_back(pair.first, lexer->lineNumberToAddressMap[pair.second]);
+    }
+
     Parser::Metadata metadata = {
         "0.1",
         get_compile_unix_time(),
@@ -107,8 +116,12 @@ int main(int argc, char* argv[]) {
             std::cout << "\n";
         }
     }
+    auto object_file_gen = new ObjectFileGenerator(metadata, parser->getObjectCode(), relocation_entries);
+
+    object_file_gen->generate_object_file(output_filename);
 
     delete lexer;
+    delete object_file_gen;
     // Your processing logic here
 
     return 0;
