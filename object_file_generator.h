@@ -1,4 +1,6 @@
+#include <algorithm> // For std::reverse
 #include <utility>
+#include <bit>
 
 //
 // Created by Dulat S on 2/13/24.
@@ -24,7 +26,14 @@ class ObjectFileGenerator {
         // Write metadata
         append_to_buffer(metadata.compiler_version.c_str(), metadata.compiler_version.size() + 1);
         auto date_of_compilation = static_cast<unsigned long>(metadata.date_of_compilation);
-        append_to_buffer(&date_of_compilation, sizeof(date_of_compilation));
+        auto* date_ptr = reinterpret_cast<unsigned char*>(&date_of_compilation);
+
+        // Convert to big-endian if the system is little-endian
+        if constexpr (std::endian::native == std::endian::little) {
+            std::reverse(date_ptr, date_ptr + sizeof(date_of_compilation));
+        }
+
+        append_to_buffer(date_ptr, sizeof(date_of_compilation));
         append_to_buffer(metadata.source_file_name.c_str(), metadata.source_file_name.size() + 1);
 
         // Write object code
