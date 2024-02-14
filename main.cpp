@@ -15,6 +15,33 @@
 #include <parser.h>
 #include <object_file_generator.h>
 #include <iomanip>
+#include <cctype> // For std::isprint
+
+void print_hex_dump(const std::vector<uint8_t>& object_file) {
+    for (size_t i = 0; i < object_file.size(); ++i) {
+        // Print offset at the beginning of each line
+        if (i % 16 == 0) {
+            std::cout << std::setw(8) << std::setfill('0') << std::hex << i << ": ";
+        }
+
+        // Print the element in hex format
+        std::cout << std::setw(2) << std::setfill('0') << static_cast<int>(object_file[i]) << " ";
+
+        // Print ASCII representation at the end of each line
+        if ((i + 1) % 16 == 0 || i + 1 == object_file.size()) {
+            // Calculate the number of spaces needed to align the ASCII output
+            int spaces_needed = static_cast<int>((16 - ((i + 1) % 16)) % 16);
+            std::cout << std::string(spaces_needed * 3, ' ') << "|";
+
+            // Print ASCII characters
+            for (size_t j = i - (i % 16); j <= i; ++j) {
+                char c = static_cast<char>(object_file[j]);
+                std::cout << (std::isprint(c) ? c : '.');
+            }
+            std::cout << "|\n";
+        }
+    }
+}
 
 int main(int argc, char* argv[]) {
     std::string input_filename;
@@ -89,9 +116,10 @@ int main(int argc, char* argv[]) {
     std::vector<Parser::RelocationEntry> relocation_entries;
 
     relocation_entries.reserve(lexer->labelTable.size());
-    for (auto pair: lexer->labelTable) {
+    for (const auto& pair : lexer->labelTable) {
         relocation_entries.emplace_back(pair.first, lexer->lineNumberToAddressMap[pair.second]);
     }
+    std::reverse(relocation_entries.begin(), relocation_entries.end());
 
     Parser::Metadata metadata = {
         "0.1",
@@ -104,21 +132,12 @@ int main(int argc, char* argv[]) {
     parser->parse();
 
     // Iterate through the vector and print each element in hex
-    for (size_t i = 0; i < parser->getObjectCode().size(); ++i) {
-        // Print the element in hex format
-        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(parser->getObjectCode()[i]);
-
-        // Formatting: add a space after every byte for readability
-        std::cout << " ";
-
-        // Optional: Add a new line every 16 bytes to mimic traditional hex dump format
-        if ((i + 1) % 16 == 0) {
-            std::cout << "\n";
-        }
-    }
     auto object_file_gen = new ObjectFileGenerator(metadata, parser->getObjectCode(), relocation_entries);
 
     object_file_gen->generate_object_file(output_filename);
+    std::vector<uint8_t> object_file = object_file_gen->get_object_file();
+
+    print_hex_dump(object_file);
 
     delete lexer;
     delete object_file_gen;

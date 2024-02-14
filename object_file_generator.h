@@ -12,6 +12,36 @@ class ObjectFileGenerator {
     Parser::Metadata metadata;
     std::vector<uint8_t> object_code;
     std::vector<Parser::RelocationEntry> relocation_table;
+    std::vector<uint8_t> create_object_file_buffer() {
+        std::vector<uint8_t> buffer;
+
+        // Helper lambda to append data to the buffer
+        auto append_to_buffer = [&buffer](const void* data, size_t size) {
+            const auto* bytes = static_cast<const uint8_t*>(data);
+            buffer.insert(buffer.end(), bytes, bytes + size);
+        };
+
+        // Write metadata
+        append_to_buffer(metadata.compiler_version.c_str(), metadata.compiler_version.size() + 1);
+        auto date_of_compilation = static_cast<unsigned long>(metadata.date_of_compilation);
+        append_to_buffer(&date_of_compilation, sizeof(date_of_compilation));
+        append_to_buffer(metadata.source_file_name.c_str(), metadata.source_file_name.size() + 1);
+
+        // Write object code
+        auto object_code_size = static_cast<uint32_t>(object_code.size());
+        append_to_buffer(&object_code_size, sizeof(object_code_size));
+        append_to_buffer(object_code.data(), object_code.size());
+
+        // Write relocation table
+        auto relocation_table_size = static_cast<uint16_t>(relocation_table.size());
+        append_to_buffer(&relocation_table_size, sizeof(relocation_table_size));
+        for (const auto& entry : relocation_table) {
+            append_to_buffer(entry.label.c_str(), entry.label.size() + 1);
+            append_to_buffer(&entry.address, sizeof(entry.address));
+        }
+
+        return buffer;
+    }
 
 public:
     ObjectFileGenerator(Parser:: Metadata  metadata, const std::vector<uint8_t>& object_code, const std::vector<Parser::RelocationEntry>& relocation_table)
@@ -24,31 +54,13 @@ public:
             return;
         }
 
-        // Write metadata
-        write_string(file, metadata.compiler_version);
-        auto date_of_compilation = static_cast<unsigned long>(metadata.date_of_compilation);
-        file.write(reinterpret_cast<const char*>(&date_of_compilation), sizeof(date_of_compilation));
-        write_string(file, metadata.source_file_name);
-
-        // Write object code
-        auto object_code_size = static_cast<uint32_t>(object_code.size());
-        file.write(reinterpret_cast<const char*>(&object_code_size), sizeof(object_code_size));
-        file.write(reinterpret_cast<const char*>(object_code.data()), object_code_size);
-
-        // Write relocation table
-        auto relocation_table_size = static_cast<uint16_t>(relocation_table.size());
-        file.write(reinterpret_cast<const char*>(&relocation_table_size), sizeof(relocation_table_size));
-        for (const auto& entry : relocation_table) {
-            write_string(file, entry.label);
-            file.write(reinterpret_cast<const char*>(&entry.address), sizeof(entry.address));
-        }
-
+        std::vector<uint8_t> buffer = create_object_file_buffer();
+        file.write(reinterpret_cast<const char*>(buffer.data()), static_cast<long>(buffer.size()));
         file.close();
     }
 
-private:
-    static void write_string(std::ofstream& file, const std::string& str) {
-        file.write(str.c_str(), str.size() + 1); // +1 to include null terminator
+    std::vector<uint8_t> get_object_file() {
+        return create_object_file_buffer();
     }
 };
 
