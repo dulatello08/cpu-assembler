@@ -10,7 +10,7 @@
 #include <iostream>
 
 class object_files_parser {
-private:
+
     std::vector<std::ifstream> object_files_streams;
     std::vector<std::string> object_files;
 
@@ -37,6 +37,13 @@ public:
     }
 
     bool validate_all_files();
+private:
+    void log_error(const std::string& message, size_t file_index) {
+        std::cerr << "Validation failed: " << message << " in file " << object_files[file_index] << std::endl;
+    }
+    void log_info(const std::string& message, size_t file_index) {
+        std::cout << "Info: " << message << " in file " << object_files[file_index] << std::endl;
+    }
 };
 
 
