@@ -6,6 +6,7 @@
 #include "linker.h"
 #include <string>
 #include <vector>
+#include "object_files_parser.h"
 
 int main(int argc, char* argv[]) {
     std::vector<std::string> inputFiles;
@@ -58,6 +59,9 @@ int main(int argc, char* argv[]) {
     std::cout << "Output file: " << outputFile << std::endl;
 
     // Actual linking logic would go here
+    auto o_files_parser = new object_files_parser(inputFiles);
 
+    o_files_parser->validate_all_files();
+    delete o_files_parser;
     return 0;
 }

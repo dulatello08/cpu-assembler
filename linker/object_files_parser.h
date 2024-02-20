@@ -12,9 +12,10 @@
 class object_files_parser {
 private:
     std::vector<std::ifstream> object_files_streams;
+    std::vector<std::string> object_files;
 
 public:
-    explicit object_files_parser(const std::vector<std::string>& object_files) {
+    explicit object_files_parser(const std::vector<std::string>& object_files): object_files(object_files) {
         for (const auto& file_path : object_files) {
             std::ifstream file_stream(file_path, std::ios::binary | std::ios::in);
             if (file_stream.is_open()) {
