@@ -3,3 +3,8 @@
 //
 
 #include "object_files_parser.h"
+
+
+bool object_files_parser::validate_all_files() {
+
+}
