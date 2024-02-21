@@ -28,14 +28,17 @@ bool object_files_parser::validate_all_files() {
 
         log_info("Assembler version: " + assembler_version, i);
 
-        std::int64_t compilation_time;
+        unsigned long compilation_time;
         file_stream.read(reinterpret_cast<char*>(&compilation_time), sizeof(compilation_time));
         if (!file_stream) {
             log_error("Could not read compilation time", i);
             return false;
         }
-        compilation_time = htonl(compilation_time);
-        log_info("Compilation time: " + std::to_string(compilation_time), i);
+        compilation_time = htonll(compilation_time);
+        auto temp_time = static_cast<time_t>(compilation_time);
+        char buffer[80];
+        std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %I:%M:%S %p", std::localtime(&temp_time));
+        log_info("Compilation time: " + std::string(buffer), i);
 
         std::string source_file_name;
         std::getline(file_stream, source_file_name, '\0');

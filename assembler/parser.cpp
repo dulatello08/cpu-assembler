@@ -76,10 +76,10 @@ void Parser::handleRelocation(const Token& token) {
     addObjectCodeByte(0xEA);
 
     // Find the index of the label in the relocation table
-    auto it = std::find_if(relocation_entries.begin(), relocation_entries.end(),
-                           [&token](const RelocationEntry& entry) {
-                               return entry.label == token.lexeme;
-                           });
+    const auto it = std::ranges::find_if(relocation_entries.begin(), relocation_entries.end(),
+                                   [&token](const RelocationEntry& entry) {
+                                       return entry.label == token.lexeme;
+                                   });
 
     uint16_t index;
     if (it != relocation_entries.end()) {
