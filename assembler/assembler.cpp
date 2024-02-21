@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
         input_filename
     };
 
-    auto parser = new Parser(lexer->tokens, metadata, conf);
+    auto parser = new Parser(lexer->tokens, metadata, conf, relocation_entries);
 
     parser->parse();
 

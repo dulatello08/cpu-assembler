@@ -72,7 +72,25 @@ void Parser::processToken(const Token& token) {
 }
 
 void Parser::handleRelocation(const Token& token) {
-    // Implementation depends on how relocation information is to be processed
-    addObjectCodeByte(token.data >> 8);
-    addObjectCodeByte(token.data & 0xFF);
+    // Add the sentinel token to indicate a relocation entry
+    addObjectCodeByte(0xEA);
+
+    // Find the index of the label in the relocation table
+    auto it = std::find_if(relocation_entries.begin(), relocation_entries.end(),
+                           [&token](const RelocationEntry& entry) {
+                               return entry.label == token.lexeme;
+                           });
+
+    uint16_t index;
+    if (it != relocation_entries.end()) {
+        // Label already in the relocation table, use its index
+        index = std::distance(relocation_entries.begin(), it);
+    } else {
+        // Label not in the relocation table
+        exit(1);
+    }
+
+    // Add the index of the label in the relocation table (big endian)
+    addObjectCodeByte((index >> 8) & 0xFF);
+    addObjectCodeByte(index & 0xFF);
 }

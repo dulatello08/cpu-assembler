@@ -39,10 +39,11 @@ private:
     void addObjectCodeByte(uint8_t byte) {
         object_code.push_back(byte);
     }
+    std::vector<RelocationEntry> relocation_entries;
 
 public:
-    Parser(const std::vector<Token>& tokens, Metadata metadata, std::vector<uint8_t> conf)
-            : tokens(tokens), metadata(std::move(metadata)), conf(std::move(conf)){}
+    Parser(const std::vector<Token>& tokens, Metadata metadata, std::vector<uint8_t> conf, std::vector<RelocationEntry> relocation_entries)
+            : tokens(tokens), metadata(std::move(metadata)), conf(std::move(conf)), relocation_entries(std::move(relocation_entries)){}
 
     void parse();
     void processToken(const Token& token);
