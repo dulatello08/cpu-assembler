@@ -11,11 +11,16 @@
 #include <map>
 
 
+#if defined(__linux__) && !defined(__APPLE__)
+#include <arpa/inet.h>
+
 uint64_t htonll(uint64_t hostlonglong) {
     uint32_t high_part = htonl((uint32_t)(hostlonglong >> 32));
     uint32_t low_part = htonl((uint32_t)(hostlonglong & 0xFFFFFFFFULL));
     return (((uint64_t)low_part) << 32) | high_part;
 }
+
+#endif // defined(__linux__) && !defined(__APPLE__)
 
 
 bool object_files_parser::validate_all_files() {
