@@ -4,6 +4,18 @@
 
 #include "object_files_parser.h"
 #include <arpa/inet.h>
+#include <ctime>
+#include <sstream>
+#include <iostream>
+#include <limits>
+#include <map>
+
+
+uint64_t htonll(uint64_t hostlonglong) {
+    uint32_t high_part = htonl((uint32_t)(hostlonglong >> 32));
+    uint32_t low_part = htonl((uint32_t)(hostlonglong & 0xFFFFFFFFULL));
+    return (((uint64_t)low_part) << 32) | high_part;
+}
 
 
 bool object_files_parser::validate_all_files() {
@@ -90,4 +102,46 @@ bool object_files_parser::validate_all_files() {
 
     std::cout << "All files validated successfully." << std::endl;
     return true;
+}
+
+std::pair<int, int> object_files_parser::findByteRange(const std::vector<uint8_t> &objectFile) {
+
+    std::istringstream file_stream(std::string(objectFile.begin(), objectFile.end()));
+
+    // Skip the assembler version, compilation time, and source file name
+    file_stream.ignore(std::numeric_limits<std::streamsize>::max(), '\0'); // Assembler version
+    file_stream.ignore(sizeof(unsigned long)); // Compilation time
+    file_stream.ignore(std::numeric_limits<std::streamsize>::max(), '\0'); // Source file name
+
+    // Skip object code length
+    uint32_t object_code_length;
+    file_stream.read(reinterpret_cast<char*>(&object_code_length), sizeof(object_code_length));
+
+    // Skip object code
+    file_stream.ignore(object_code_length);
+
+    // Read relocation table
+    uint16_t relocation_table_size;
+    file_stream.read(reinterpret_cast<char*>(&relocation_table_size), sizeof(relocation_table_size));
+
+    std::map<std::string, uint16_t> labelAddresses;
+    for (uint16_t i = 0; i < relocation_table_size; ++i) {
+        std::string label_name;
+        std::getline(file_stream, label_name, '\0');
+
+        uint16_t address;
+        file_stream.read(reinterpret_cast<char*>(&address), sizeof(address));
+
+        labelAddresses[label_name] = address;
+    }
+
+    // Find the start and end addresses of the _start and _halt labels
+    auto start_it = labelAddresses.find("_start");
+    auto halt_it = labelAddresses.find("_halt");
+
+    if (start_it == labelAddresses.end() || halt_it == labelAddresses.end()) {
+        throw std::runtime_error("Missing _start or _halt label");
+    }
+
+    return std::make_pair(start_it->second, halt_it->second);
 }

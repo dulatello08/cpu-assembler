@@ -62,6 +62,10 @@ int main(int argc, char* argv[]) {
     auto o_files_parser = new object_files_parser(inputFiles);
 
     o_files_parser->validate_all_files();
+    for (auto & file : o_files_parser->object_files) {
+        auto result = object_files_parser::findByteRange(object_files_parser::readFile(file.c_str()));
+        std::cout << result.first << " " << result.second << std::endl;
+    }
     delete o_files_parser;
     return 0;
 }

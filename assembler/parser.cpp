@@ -3,6 +3,7 @@
 //
 
 #include <limits>
+#include <algorithm>
 #include "parser.h"
 
 void Parser::parse() {
@@ -36,7 +37,7 @@ void Parser::processToken(const Token& token) {
                     // Registers packed together count as one operand
                 }
                 addObjectCodeByte(packedRegisters);
-                numOpsRemaining--; // One operand (or pair of operands) processed
+                numOpsRemaining--; // One operand (or a pair of operands) processed
                 break;
             }
             case TokenType::Operand2: {
@@ -75,22 +76,10 @@ void Parser::handleRelocation(const Token& token) {
     // Add the sentinel token to indicate a relocation entry
     addObjectCodeByte(0xEA);
 
-    // Find the index of the label in the relocation table
-    const auto it = std::ranges::find_if(relocation_entries.begin(), relocation_entries.end(),
-                                   [&token](const RelocationEntry& entry) {
-                                       return entry.label == token.lexeme;
-                                   });
-
-    uint16_t index;
-    if (it != relocation_entries.end()) {
-        // Label already in the relocation table, use its index
-        index = std::distance(relocation_entries.begin(), it);
-    } else {
-        // Label not in the relocation table
-        exit(1);
+    // Add the token's lexeme to the object code as a null-terminated string
+    for (char c : token.lexeme) {
+        addObjectCodeByte(static_cast<uint8_t>(c));
     }
-
-    // Add the index of the label in the relocation table (big endian)
-    addObjectCodeByte((index >> 8) & 0xFF);
-    addObjectCodeByte(index & 0xFF);
+    // Add the null terminator
+    addObjectCodeByte(0x00);
 }
