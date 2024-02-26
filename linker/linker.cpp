@@ -69,14 +69,14 @@ int main(const int argc, char* argv[]) {
     auto o_files_parser = new object_files_parser(inputFiles);
 
     o_files_parser->validate_all_files();
-
-    for (auto &file : o_files_parser->object_files) {
-        auto [first, second] = object_files_parser::findByteRange(object_files_parser::readFile(file.c_str()));
-        std::cout << first << " " << second << std::endl;
-    }
+    std::vector<uint8_t> mainProgramFile = object_files_parser::readFile("program.o");
+    auto [first, second] = object_files_parser::findByteRange(mainProgramFile);
+    std::cout << first << " " << second << std::endl;
+    std::vector<uint8_t> startCode(mainProgramFile.begin() + first, mainProgramFile.begin() + second);
 
     linker_config linker_config = parseLinkerConfig(configFile);
-    std::cout << linker_config.start_label_address << std::endl;
+
+
 
     delete o_files_parser;
     return 0;

@@ -129,7 +129,7 @@ std::pair<int, int> object_files_parser::findByteRange(const std::vector<uint8_t
     uint16_t relocation_table_size;
     file_stream.read(reinterpret_cast<char*>(&relocation_table_size), sizeof(relocation_table_size));
 
-    std::map<std::string, uint16_t> labelAddresses;
+    std::vector<std::pair<std::string, uint16_t>> labelAddresses;
     for (uint16_t i = 0; i < relocation_table_size; ++i) {
         std::string label_name;
         std::getline(file_stream, label_name, '\0');
@@ -137,24 +137,20 @@ std::pair<int, int> object_files_parser::findByteRange(const std::vector<uint8_t
         uint16_t address;
         file_stream.read(reinterpret_cast<char*>(&address), sizeof(address));
 
-        labelAddresses[label_name] = address;
-    }
-
-    // Reverse the order of labels in the map
-    std::map<std::string, uint16_t> reversedLabelAddresses;
-    for (auto it = labelAddresses.rbegin(); it != labelAddresses.rend(); ++it) {
-        reversedLabelAddresses[it->first] = it->second;
+        labelAddresses.emplace_back(label_name, address);
     }
 
     // Find the start address of the _start label
-    const auto start_it = reversedLabelAddresses.find("_start");
-    if (start_it == reversedLabelAddresses.end()) {
+    auto start_it = std::find_if(labelAddresses.begin(), labelAddresses.end(),
+                                 [](const auto& pair) { return pair.first == "_start"; });
+
+    if (start_it == labelAddresses.end()) {
         throw std::runtime_error("Missing _start label");
     }
 
     // Find the label immediately following _start
     auto next_it = std::next(start_it);
-    if (next_it == reversedLabelAddresses.end()) {
+    if (next_it == labelAddresses.end()) {
         throw std::runtime_error("No label found after _start");
     }
 
