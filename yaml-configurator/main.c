@@ -1,5 +1,24 @@
 #include "main.h"
 
+#define HASH_TABLE_SIZE 1024 // 1KB
+#define PRIME_FACTOR 101      // Prime factor for the hash calculation
+#define MIX_FACTOR 137       // Mix factor to enhance distribution
+
+// Enhanced hash function
+unsigned int hash_function(const char *instr_string) {
+    unsigned int hash = 0;
+    // Assuming instr_string points to at least four characters
+    unsigned int ascii_1 = (unsigned int)instr_string[0];
+    unsigned int ascii_2 = (unsigned int)instr_string[1];
+    unsigned int ascii_3 = (unsigned int)instr_string[2];
+    unsigned int ascii_4 = (unsigned int)instr_string[3];
+
+    // Calculate hash based on the enhanced formula
+    hash = (((ascii_1 ^ (ascii_2 << 5)) + (ascii_3 ^ (ascii_4 << 5)) * PRIME_FACTOR) ^ MIX_FACTOR) % HASH_TABLE_SIZE;
+
+    return hash;
+}
+
 typedef struct {
     int opcode;
     int num_ops;
@@ -114,18 +133,21 @@ int main(int argc, char **argv) {
     }
 
     // Print opcodes and write to output file
-    uint8_t *outputArray = malloc(num_opcodes * 7 * sizeof(uint8_t));
+    uint8_t *outputArray = calloc(HASH_TABLE_SIZE, sizeof(uint8_t));
     for (int i = 0; i < num_opcodes; i++) {
-        printf("%s: 0x%02X, Num_ops: %d, Op1_mode: %d\n", opcodes[i].name, opcodes[i].opcode, opcodes[i].num_ops, opcodes[i].op1_mode);
-        outputArray[i * 7] = opcodes[i].opcode;
-        outputArray[i * 7 + 1] = opcodes[i].name[0];
-        outputArray[i * 7 + 2] = opcodes[i].name[1];
-        outputArray[i * 7 + 3] = opcodes[i].name[2];
-        outputArray[i * 7 + 4] = opcodes[i].name[3];
-        outputArray[i * 7 + 5] = opcodes[i].num_ops;
-        outputArray[i * 7 + 6] = opcodes[i].op1_mode;
+        // Get the hash index for the current opcode
+        unsigned int index = hash_function(opcodes[i].name); // 3 bytes per entry
+        printf("Index: %d\n", index);
+        if (index < HASH_TABLE_SIZE - 3) { // Ensure there's space for the full entry
+            outputArray[index] = opcodes[i].opcode;
+            outputArray[index + 1] = opcodes[i].num_ops;
+            outputArray[index + 2] = opcodes[i].op1_mode;
+        } else {
+            printf("Hash table overflow, increase HASH_TABLE_SIZE or improve your hash function\n");
+            return 1;
+        }
     }
-    fwrite(outputArray, sizeof(uint8_t), num_opcodes * 7, outputFile);
+    fwrite(outputArray, sizeof(uint8_t), HASH_TABLE_SIZE, outputFile);
     free(outputArray);
 
     // Cleanup
