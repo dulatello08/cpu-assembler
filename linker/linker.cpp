@@ -4,11 +4,18 @@
 
 #include <iostream>
 #include "linker.h"
+
+#include <getopt.h>
 #include <string>
 #include <vector>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 #include "object_files_parser.h"
 
-int main(int argc, char* argv[]) {
+linker_config parseLinkerConfig(const std::string& config_filename);
+
+int main(const int argc, char* argv[]) {
     std::vector<std::string> inputFiles;
     std::string configFile;
     std::string outputFile = "a.out";
@@ -62,10 +69,47 @@ int main(int argc, char* argv[]) {
     auto o_files_parser = new object_files_parser(inputFiles);
 
     o_files_parser->validate_all_files();
-    for (auto & file : o_files_parser->object_files) {
-        auto result = object_files_parser::findByteRange(object_files_parser::readFile(file.c_str()));
-        std::cout << result.first << " " << result.second << std::endl;
+
+    for (auto &file : o_files_parser->object_files) {
+        auto [first, second] = object_files_parser::findByteRange(object_files_parser::readFile(file.c_str()));
+        std::cout << first << " " << second << std::endl;
     }
+
+    linker_config linker_config = parseLinkerConfig(configFile);
+    std::cout << linker_config.start_label_address << std::endl;
+
     delete o_files_parser;
     return 0;
+}
+
+
+linker_config parseLinkerConfig(const std::string& config_filename) {
+    linker_config config{};
+    std::ifstream config_file(config_filename);
+
+    if (!config_file.is_open()) {
+        std::cerr << "Failed to open config file: " << config_filename << std::endl;
+        exit(1);
+    }
+
+    std::string line;
+    while (getline(config_file, line)) {
+        std::istringstream line_stream(line);
+        std::string key;
+        if (getline(line_stream, key, '=')) {
+            std::string value;
+            if (getline(line_stream, value)) {
+                if (key == "start_label_address") {
+                    config.start_label_address = static_cast<uint16_t>(std::stoi(value, nullptr, 16));
+                } else if (key == "output_256_bytes_boot_sector") {
+                    config.output_256_bytes_boot_sector = (value == "true");
+                } else if (key == "output_4kb_flash") {
+                    config.output_4_kb_flash = (value == "true");
+                }
+            }
+        }
+    }
+
+    config_file.close();
+    return config;
 }

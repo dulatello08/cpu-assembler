@@ -140,13 +140,23 @@ std::pair<int, int> object_files_parser::findByteRange(const std::vector<uint8_t
         labelAddresses[label_name] = address;
     }
 
-    // Find the start and end addresses of the _start and _halt labels
-    auto start_it = labelAddresses.find("_start");
-    auto halt_it = labelAddresses.find("_halt");
-
-    if (start_it == labelAddresses.end() || halt_it == labelAddresses.end()) {
-        throw std::runtime_error("Missing _start or _halt label");
+    // Reverse the order of labels in the map
+    std::map<std::string, uint16_t> reversedLabelAddresses;
+    for (auto it = labelAddresses.rbegin(); it != labelAddresses.rend(); ++it) {
+        reversedLabelAddresses[it->first] = it->second;
     }
 
-    return std::make_pair(start_it->second, halt_it->second);
+    // Find the start address of the _start label
+    const auto start_it = reversedLabelAddresses.find("_start");
+    if (start_it == reversedLabelAddresses.end()) {
+        throw std::runtime_error("Missing _start label");
+    }
+
+    // Find the label immediately following _start
+    auto next_it = std::next(start_it);
+    if (next_it == reversedLabelAddresses.end()) {
+        throw std::runtime_error("No label found after _start");
+    }
+
+    return std::make_pair(start_it->second, next_it->second);
 }
