@@ -12,14 +12,16 @@
 
 class object_files_parser {
 public:
-    std::vector<std::ifstream> object_files_streams;
+    std::vector<std::vector<uint8_t>> object_file_vectors;
     std::vector<std::string> object_files;
 
-    explicit object_files_parser(const std::vector<std::string>& object_files): object_files(object_files) {
+    explicit object_files_parser(const std::vector<std::string>& object_files) : object_files(object_files) {
         for (const auto& file_path : object_files) {
             std::ifstream file_stream(file_path, std::ios::binary | std::ios::in);
             if (file_stream.is_open()) {
-                object_files_streams.push_back(std::move(file_stream));
+                // Read the contents of the file into a vector
+                std::vector<uint8_t> file_content((std::istreambuf_iterator<char>(file_stream)), std::istreambuf_iterator<char>());
+                object_file_vectors.push_back(std::move(file_content));
             } else {
                 // Handle the case when the file couldn't be opened
                 std::cerr << "Error: Unable to open file " << file_path << std::endl;
@@ -28,34 +30,20 @@ public:
     }
 
     // Destructor to close all the open file streams
-    ~object_files_parser() {
-        for (auto& file_stream : object_files_streams) {
-            if (file_stream.is_open()) {
-                file_stream.close();
-            }
-        }
-    }
+    ~object_files_parser() = default;
 
     bool validate_all_files();
-    static std::pair<int, int> findByteRange(const std::vector<uint8_t>& objectFile);
-    static std::vector<uint8_t> readFile(const char* filename) {
-        std::ifstream file(filename, std::ios::binary);
-
-        if (!file) {
-            throw std::runtime_error("Could not open file: " + std::string(filename));
+    std::pair<int, int> findGlobalStartRange();
+    std::vector<uint8_t> readFile(const std::string& filename) {
+        for (size_t i = 0; i < object_files.size(); ++i) {
+            if (object_files[i] == filename) {
+                return object_file_vectors[i];
+            }
         }
-
-        // Get the size of the file
-        file.seekg(0, std::ios::end);
-        std::streampos fileSize = file.tellg();
-        file.seekg(0, std::ios::beg);
-
-        // Read the file into a vector
-        std::vector<uint8_t> vec(fileSize);
-        file.read(reinterpret_cast<char*>(vec.data()), fileSize);
-
-        return vec;
+        // If the file is not found, return an empty vector
+        return {};
     }
+
 private:
     void log_error(const std::string& message, size_t file_index) const {
         std::cerr << "Validation failed: " << message << " in file " << object_files[file_index] << std::endl;

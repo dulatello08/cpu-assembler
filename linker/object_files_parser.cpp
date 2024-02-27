@@ -25,9 +25,8 @@ uint64_t htonll(uint64_t hostlonglong) {
 
 bool object_files_parser::validate_all_files() {
     std::string first_file_version;
-    for (size_t i = 0; i < object_files_streams.size(); ++i) {
-        auto& file_stream = object_files_streams[i];
-        file_stream.seekg(0, std::ios::beg);
+    for (size_t i = 0; i < object_file_vectors.size(); ++i) {
+        std::istringstream file_stream(std::string(object_file_vectors[i].begin(), object_file_vectors[i].end()));
 
         std::string assembler_version;
         std::getline(file_stream, assembler_version, '\0');
@@ -109,9 +108,9 @@ bool object_files_parser::validate_all_files() {
     return true;
 }
 
-std::pair<int, int> object_files_parser::findByteRange(const std::vector<uint8_t> &objectFile) {
+std::pair<int, int> object_files_parser::findGlobalStartRange() {
 
-    std::istringstream file_stream(std::string(objectFile.begin(), objectFile.end()));
+    std::istringstream file_stream(std::string(object_file_vectors[0].begin(), object_file_vectors[0].end()));
 
     // Skip the assembler version, compilation time, and source file name
     file_stream.ignore(std::numeric_limits<std::streamsize>::max(), '\0'); // Assembler version

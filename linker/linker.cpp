@@ -69,8 +69,8 @@ int main(const int argc, char* argv[]) {
     auto o_files_parser = new object_files_parser(inputFiles);
 
     o_files_parser->validate_all_files();
-    std::vector<uint8_t> mainProgramFile = object_files_parser::readFile("program.o");
-    auto [first, second] = object_files_parser::findByteRange(mainProgramFile);
+    std::vector<uint8_t> mainProgramFile = o_files_parser->readFile("program.o");
+    auto [first, second] = o_files_parser->findGlobalStartRange();
     std::cout << first << " " << second << std::endl;
     std::vector<uint8_t> startCode(mainProgramFile.begin() + first, mainProgramFile.begin() + second);
 
