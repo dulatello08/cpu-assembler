@@ -10,10 +10,16 @@
 #include <iostream>
 #include <fstream>
 
+struct LabelInfo {
+    std::string name;
+    uint16_t address;
+};
+
 class object_files_parser {
 public:
     std::vector<std::vector<uint8_t>> object_file_vectors;
     std::vector<std::string> object_files;
+    std::vector<std::vector<LabelInfo>> label_info_per_file;
 
     explicit object_files_parser(const std::vector<std::string>& object_files) : object_files(object_files) {
         for (const auto& file_path : object_files) {
@@ -33,6 +39,7 @@ public:
     ~object_files_parser() = default;
 
     bool validate_all_files();
+    void pre_relocate_all_files();
     std::pair<int, int> findGlobalStartRange();
     std::vector<uint8_t> readFile(const std::string& filename) {
         for (size_t i = 0; i < object_files.size(); ++i) {

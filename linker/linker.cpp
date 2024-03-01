@@ -11,9 +11,35 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
 #include "object_files_parser.h"
 
 linker_config parseLinkerConfig(const std::string& config_filename);
+void print_hex_dump(const std::vector<uint8_t>& object_file) {
+    for (size_t i = 0; i < object_file.size(); ++i) {
+        // Print offset at the beginning of each line
+        if (i % 16 == 0) {
+            std::cout << std::setw(8) << std::setfill('0') << std::hex << i << ": ";
+        }
+
+        // Print the element in hex format
+        std::cout << std::setw(2) << std::setfill('0') << static_cast<int>(object_file[i]) << " ";
+
+        // Print ASCII representation at the end of each line
+        if ((i + 1) % 16 == 0 || i + 1 == object_file.size()) {
+            // Calculate the number of spaces needed to align the ASCII output
+            int spaces_needed = static_cast<int>((16 - ((i + 1) % 16)) % 16);
+            std::cout << std::string(spaces_needed * 3, ' ') << "|";
+
+            // Print ASCII characters
+            for (size_t j = i - (i % 16); j <= i; ++j) {
+                char c = static_cast<char>(object_file[j]);
+                std::cout << (std::isprint(c) ? c : '.');
+            }
+            std::cout << "|\n";
+        }
+    }
+}
 
 int main(const int argc, char* argv[]) {
     std::vector<std::string> inputFiles;
@@ -75,6 +101,10 @@ int main(const int argc, char* argv[]) {
     std::vector<uint8_t> startCode(mainProgramFile.begin() + first, mainProgramFile.begin() + second);
 
     linker_config linker_config = parseLinkerConfig(configFile);
+
+    o_files_parser->pre_relocate_all_files();
+
+    print_hex_dump(o_files_parser->object_file_vectors[0]);
 
 
 

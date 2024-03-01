@@ -23,7 +23,9 @@ uint64_t htonll(uint64_t hostlonglong) {
 #endif // defined(__linux__) && !defined(__APPLE__)
 
 
+
 bool object_files_parser::validate_all_files() {
+    label_info_per_file.clear(); // Clear any existing data
     std::string first_file_version;
     for (size_t i = 0; i < object_file_vectors.size(); ++i) {
         std::istringstream file_stream(std::string(object_file_vectors[i].begin(), object_file_vectors[i].end()));
@@ -85,23 +87,27 @@ bool object_files_parser::validate_all_files() {
             return false;
         }
         log_info("Relocation table size: " + std::to_string(relocation_table_size), i);
+        std::vector<LabelInfo> labels_in_file;
 
         for (std::uint16_t j = 0; j < relocation_table_size; ++j) {
-            std::string label_name;
-            std::getline(file_stream, label_name, '\0');
-            if (label_name.empty()) {
+            LabelInfo label_info;
+            std::getline(file_stream, label_info.name, '\0');
+            if (label_info.name.empty()) {
                 log_error("Missing label name in relocation table", i);
                 return false;
             }
 
-            std::uint16_t address;
-            file_stream.read(reinterpret_cast<char*>(&address), sizeof(address));
+            file_stream.read(reinterpret_cast<char*>(&label_info.address), sizeof(label_info.address));
             if (!file_stream) {
                 log_error("Could not read label address in relocation table", i);
                 return false;
             }
-            log_info("Label: " + label_name + ", Address: " + std::to_string(address), i);
+            log_info("Label: " + label_info.name + ", Address: " + std::to_string(label_info.address), i);
+
+            labels_in_file.push_back(std::move(label_info));
         }
+
+        label_info_per_file.push_back(std::move(labels_in_file));
     }
 
     std::cout << "All files validated successfully." << std::endl;
@@ -154,4 +160,45 @@ std::pair<int, int> object_files_parser::findGlobalStartRange() {
     }
 
     return std::make_pair(start_it->second, next_it->second);
+}
+
+
+void object_files_parser::pre_relocate_all_files() {
+    for (size_t file_index = 0; file_index < object_file_vectors.size(); ++file_index) {
+        auto& code = object_file_vectors[file_index];
+        for (size_t i = 0; i < code.size(); ++i) {
+            if (code[i] == 0xea) { // Found a label reference
+                size_t start_index = i;
+                size_t end_index = i + 1;
+                while (end_index < code.size() && code[end_index] != '\0') {
+                    ++end_index;
+                }
+                if (end_index == code.size()) {
+                    // Null terminator not found - handle error
+                    std::cerr << "Error: Null terminator not found after 0xea in file " << object_files[file_index] << std::endl;
+                    return;
+                }
+
+                std::string label_name(reinterpret_cast<char*>(&code[i + 1]), end_index - (i + 1));
+                int label_index = -1;
+                for (size_t label_idx = 0; label_idx < label_info_per_file[file_index].size(); ++label_idx) {
+                    if (label_info_per_file[file_index][label_idx].name == label_name) {
+                        label_index = static_cast<int>(label_idx);
+                        break;
+                    }
+                }
+                if (label_index == -1) {
+                    // Label not found - handle error
+                    std::cerr << "Error: Label '" << label_name << "' not found in file " << object_files[file_index] << std::endl;
+                    return;
+                }
+
+                // Replace the label reference with 0xea and the index of the label
+                code[start_index + 1] = static_cast<uint8_t>(label_index);
+                // Remove the label name and null terminator
+                code.erase(code.begin() + start_index + 2, code.begin() + end_index + 1);
+                i = start_index + 1; // Update the index to continue searching
+            }
+        }
+    }
 }
