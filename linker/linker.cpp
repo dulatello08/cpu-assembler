@@ -103,6 +103,7 @@ int main(const int argc, char* argv[]) {
     linker_config linker_config = parseLinkerConfig(configFile);
 
     o_files_parser->pre_relocate_all_files();
+    o_files_parser->log_label_info();
 
     print_hex_dump(o_files_parser->object_file_vectors[0]);
 
