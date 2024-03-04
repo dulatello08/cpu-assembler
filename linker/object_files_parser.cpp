@@ -114,55 +114,6 @@ bool object_files_parser::validate_all_files() {
     return true;
 }
 
-std::pair<int, int> object_files_parser::findGlobalStartRange() {
-
-    std::istringstream file_stream(std::string(object_file_vectors[0].begin(), object_file_vectors[0].end()));
-
-    // Skip the assembler version, compilation time, and source file name
-    file_stream.ignore(std::numeric_limits<std::streamsize>::max(), '\0'); // Assembler version
-    file_stream.ignore(sizeof(unsigned long)); // Compilation time
-    file_stream.ignore(std::numeric_limits<std::streamsize>::max(), '\0'); // Source file name
-
-    // Skip object code length
-    uint32_t object_code_length;
-    file_stream.read(reinterpret_cast<char*>(&object_code_length), sizeof(object_code_length));
-
-    // Skip object code
-    file_stream.ignore(object_code_length);
-
-    // Read relocation table
-    uint16_t relocation_table_size;
-    file_stream.read(reinterpret_cast<char*>(&relocation_table_size), sizeof(relocation_table_size));
-
-    std::vector<std::pair<std::string, uint16_t>> labelAddresses;
-    for (uint16_t i = 0; i < relocation_table_size; ++i) {
-        std::string label_name;
-        std::getline(file_stream, label_name, '\0');
-
-        uint16_t address;
-        file_stream.read(reinterpret_cast<char*>(&address), sizeof(address));
-
-        labelAddresses.emplace_back(label_name, address);
-    }
-
-    // Find the start address of the _start label
-    auto start_it = std::find_if(labelAddresses.begin(), labelAddresses.end(),
-                                 [](const auto& pair) { return pair.first == "_start"; });
-
-    if (start_it == labelAddresses.end()) {
-        throw std::runtime_error("Missing _start label");
-    }
-
-    // Find the label immediately following _start
-    auto next_it = std::next(start_it);
-    if (next_it == labelAddresses.end()) {
-        throw std::runtime_error("No label found after _start");
-    }
-
-    return std::make_pair(start_it->second, next_it->second);
-}
-
-
 void object_files_parser::pre_relocate_all_files() {
     for (size_t file_index = 0; file_index < object_file_vectors.size(); ++file_index) {
         auto& code = object_file_vectors[file_index];

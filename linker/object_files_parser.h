@@ -8,7 +8,6 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
-#include <fstream>
 
 struct LabelInfo {
     std::string name;
@@ -40,16 +39,6 @@ public:
 
     bool validate_all_files();
     void pre_relocate_all_files();
-    std::pair<int, int> findGlobalStartRange();
-    std::vector<uint8_t> readFile(const std::string& filename) {
-        for (size_t i = 0; i < object_files.size(); ++i) {
-            if (object_files[i] == filename) {
-                return object_file_vectors[i];
-            }
-        }
-        // If the file is not found, return an empty vector
-        return {};
-    }
 
     void log_label_info() const {
         size_t absolute_index = 0; // Initialize the absolute index
