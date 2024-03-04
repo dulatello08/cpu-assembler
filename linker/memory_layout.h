@@ -16,10 +16,12 @@ public:
     explicit memory_layout(const std::vector<std::vector<uint8_t>>& object_files) : object_files(object_files) {
         extract_object_codes();
         global_start_range = find_global_start_range();
+        write_memory_layout();
     }
 private:
     void extract_object_codes();
     std::pair<int, int> find_global_start_range() const;
+    void write_memory_layout();
 };
 
 

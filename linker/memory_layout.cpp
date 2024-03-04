@@ -7,6 +7,8 @@
 #include <sstream>
 #include <fstream>
 
+#include "linker.h"
+
 void memory_layout::extract_object_codes() {
     for (const auto& file : object_files) {
         std::istringstream file_stream(std::string(file.begin(), file.end()));
@@ -36,7 +38,7 @@ void memory_layout::extract_object_codes() {
 
 std::pair<int, int> memory_layout::find_global_start_range() const {
     // Assume that the first object file contains the _start label
-    const auto& file = object_codes.front();
+    const auto& file = object_files.front();
 
     // Find the start address of the _start label
     auto start_it = std::find(file.begin(), file.end(), '_');
@@ -51,4 +53,24 @@ std::pair<int, int> memory_layout::find_global_start_range() const {
     }
 
     return std::make_pair(std::distance(file.begin(), start_it), std::distance(file.begin(), next_it));
+}
+
+void memory_layout::write_memory_layout() {
+    // Initialize memory with zeros
+    memory.resize(0x10000, 0);
+
+    // Write start label code to 0x0 to 0xff
+    const auto& start_label_code = object_codes.front();
+    std::copy(start_label_code.begin() + global_start_range.first,
+              start_label_code.begin() + global_start_range.second,
+              memory.begin());
+
+    // Write everything else from 0xf000 to 0xffff, spaced with 4 bytes of 0
+    size_t address = 0xf000;
+    for (const auto& code : object_codes) {
+        if (&code != &start_label_code) { // Skip the start label code
+            std::copy(code.begin(), code.end(), memory.begin() + address);
+            address += code.size() + 4; // Space with 4 bytes of 0
+        }
+    }
 }

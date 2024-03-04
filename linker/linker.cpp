@@ -12,13 +12,27 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+
+#include "memory_layout.h"
 #include "object_files_parser.h"
 
 linker_config parseLinkerConfig(const std::string& config_filename);
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#include <cctype>
+
 void print_hex_dump(const std::vector<uint8_t>& object_file) {
+    std::string prev_line;
+    bool repeated_line = false;
+
     for (size_t i = 0; i < object_file.size(); ++i) {
         // Print offset at the beginning of each line
         if (i % 16 == 0) {
+            if (repeated_line) {
+                std::cout << "*\n";
+                repeated_line = false;
+            }
             std::cout << std::setw(8) << std::setfill('0') << std::hex << i << ": ";
         }
 
@@ -29,15 +43,28 @@ void print_hex_dump(const std::vector<uint8_t>& object_file) {
         if ((i + 1) % 16 == 0 || i + 1 == object_file.size()) {
             // Calculate the number of spaces needed to align the ASCII output
             int spaces_needed = static_cast<int>((16 - ((i + 1) % 16)) % 16);
-            std::cout << std::string(spaces_needed * 3, ' ') << "|";
+            std::string current_line = std::string(spaces_needed * 3, ' ') + "|";
 
             // Print ASCII characters
             for (size_t j = i - (i % 16); j <= i; ++j) {
                 char c = static_cast<char>(object_file[j]);
-                std::cout << (std::isprint(c) ? c : '.');
+                current_line += (std::isprint(c) ? c : '.');
             }
-            std::cout << "|\n";
+            current_line += "|\n";
+
+            // Check if the current line is the same as the previous line
+            if (current_line == prev_line) {
+                repeated_line = true;
+            } else {
+                std::cout << current_line;
+                prev_line = current_line;
+            }
         }
+    }
+
+    // Print the final asterisk if the last line was repeated
+    if (repeated_line) {
+        std::cout << "*\n";
     }
 }
 
@@ -101,11 +128,13 @@ int main(const int argc, char* argv[]) {
     o_files_parser->pre_relocate_all_files();
     o_files_parser->log_label_info();
 
-    print_hex_dump(o_files_parser->object_file_vectors[0]);
+    auto memory_class = new memory_layout(o_files_parser->object_file_vectors);
 
+    print_hex_dump(memory_class->memory);
 
 
     delete o_files_parser;
+    delete memory_class;
     return 0;
 }
 

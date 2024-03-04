@@ -12,4 +12,6 @@ struct linker_config {
     bool output_4_kb_flash;
 };
 
+void print_hex_dump(const std::vector<uint8_t>& object_file);
+
 #endif // LINKER_H
