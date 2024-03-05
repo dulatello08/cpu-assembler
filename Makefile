@@ -1,5 +1,5 @@
 # Compiler settings
-CXX = g++
+CXX = clang++
 CXXFLAGS = -Wall -Wextra -Wpedantic -std=c++20 -O2 -I.
 LDFLAGS = -v
 

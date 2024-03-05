@@ -6,6 +6,7 @@
 
 #include <sstream>
 #include <fstream>
+#include <limits>
 
 #include "linker.h"
 

@@ -6,6 +6,8 @@
 #define LINKER_H
 
 
+#include <vector>
+
 struct linker_config {
     uint16_t start_label_address;
     bool output_256_bytes_boot_sector;

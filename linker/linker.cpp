@@ -17,54 +17,66 @@
 #include "object_files_parser.h"
 
 linker_config parseLinkerConfig(const std::string& config_filename);
-#include <iostream>
-#include <iomanip>
-#include <vector>
-#include <cctype>
 
 void print_hex_dump(const std::vector<uint8_t>& object_file) {
-    std::string prev_line;
-    bool repeated_line = false;
+    if (object_file.empty()) return; // Early return if the input vector is empty
 
-    for (size_t i = 0; i < object_file.size(); ++i) {
-        // Print offset at the beginning of each line
-        if (i % 16 == 0) {
-            if (repeated_line) {
-                std::cout << "*\n";
-                repeated_line = false;
-            }
-            std::cout << std::setw(8) << std::setfill('0') << std::hex << i << ": ";
+    std::vector<uint8_t> prev_line(16, 0); // Previous line for comparison, initialized to avoid first line match
+    bool is_skipping = false;
+    size_t prev_line_start = 0; // Offset of the start of the previous line
+
+    for (size_t i = 0; i < object_file.size(); i += 16) {
+        std::vector<uint8_t> current_line;
+        size_t line_end = std::min(object_file.size(), i + 16);
+        for (size_t j = i; j < line_end; ++j) {
+            current_line.push_back(object_file[j]);
         }
 
-        // Print the element in hex format
-        std::cout << std::setw(2) << std::setfill('0') << static_cast<int>(object_file[i]) << " ";
-
-        // Print ASCII representation at the end of each line
-        if ((i + 1) % 16 == 0 || i + 1 == object_file.size()) {
-            // Calculate the number of spaces needed to align the ASCII output
-            int spaces_needed = static_cast<int>((16 - ((i + 1) % 16)) % 16);
-            std::string current_line = std::string(spaces_needed * 3, ' ') + "|";
-
-            // Print ASCII characters
-            for (size_t j = i - (i % 16); j <= i; ++j) {
-                char c = static_cast<char>(object_file[j]);
-                current_line += (std::isprint(c) ? c : '.');
+        if (current_line == prev_line) {
+            if (!is_skipping) {
+                is_skipping = true; // Start skipping
+                std::cout << "*\n"; // Print the marker only once at the start of a skip
             }
-            current_line += "|\n";
-
-            // Check if the current line is the same as the previous line
-            if (current_line == prev_line) {
-                repeated_line = true;
-            } else {
-                std::cout << current_line;
-                prev_line = current_line;
+            // Don't update prev_line or print anything else, just continue to the next iteration
+        } else {
+            if (is_skipping) {
+                // Exiting skip mode, print the range of lines that were skipped
+                std::cout << std::setw(8) << std::setfill('0') << std::hex << prev_line_start
+                          << " to " << std::setw(8) << std::hex << i - 1 << "\n";
+                is_skipping = false;
             }
+
+            // Print offset at the beginning of each line
+            std::cout << std::setw(8) << std::setfill('0') << std::hex << i << ": ";
+
+            // Print the hex values for the current line
+            for (size_t j = 0; j < current_line.size(); ++j) {
+                std::cout << std::setw(2) << std::setfill('0') << std::hex << static_cast<int>(current_line[j]) << " ";
+            }
+
+            // Fill in space if the line is shorter than 16 bytes
+            if (current_line.size() < 16) {
+                int spaces_needed = 3 * (16 - current_line.size());
+                std::cout << std::string(spaces_needed, ' ');
+            }
+
+            std::cout << "|";
+
+            // Print ASCII representation
+            for (auto& byte : current_line) {
+                std::cout << (std::isprint(byte) ? static_cast<char>(byte) : '.');
+            }
+            std::cout << "|\n";
+
+            prev_line = current_line;
+            prev_line_start = i; // Update the start offset of the previous line
         }
     }
 
-    // Print the final asterisk if the last line was repeated
-    if (repeated_line) {
-        std::cout << "*\n";
+    if (is_skipping) {
+        // If the file ends with one or more skipped lines, print the final range
+        std::cout << std::setw(8) << std::setfill('0') << std::hex << prev_line_start
+                  << " to " << std::setw(8) << std::hex << object_file.size() - 1 << "\n";
     }
 }
 

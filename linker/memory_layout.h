@@ -5,6 +5,7 @@
 #ifndef MEMORY_LAYOUT_H
 #define MEMORY_LAYOUT_H
 #include <vector>
+#include <cstdint>
 
 
 class memory_layout {
