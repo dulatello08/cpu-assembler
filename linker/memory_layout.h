@@ -6,6 +6,7 @@
 #define MEMORY_LAYOUT_H
 #include <vector>
 #include <cstdint>
+#include "linker.h"
 
 
 class memory_layout {
@@ -16,6 +17,9 @@ public:
     std::vector<uint8_t> memory;
     explicit memory_layout(const std::vector<std::vector<uint8_t>>& object_files) : object_files(object_files) {
         extract_object_codes();
+        for (const auto &code: object_codes) {
+            print_hex_dump(code);
+        }
         global_start_range = find_global_start_range();
         write_memory_layout();
     }

@@ -12,6 +12,6 @@ MULTIPLICATIVE_I = $0x6f
     RSH 1 #2
     MUL 1 #5 ;should have result here now
     STM 1 #0b11101111 ; use binary format, can also be ascii character or decimal but by default is hex
-    BRN _halt
+    BRN print
 ._halt
     HLT
