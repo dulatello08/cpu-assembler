@@ -101,6 +101,7 @@ void Lexer::firstPass(std::vector<std::string> &lines) {
         else if (std::regex_match(line, match, labelPattern)) {
             address++;
             labelTable[match.str(1)] = lineNum;
+            std::cout << "label" << match.str(1) << std::endl;
         }
         else {
             // Expand macros in the line if not a macro or label definition
