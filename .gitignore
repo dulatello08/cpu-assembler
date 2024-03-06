@@ -1,1 +1,11 @@
 /.idea/
+**/assembler.o
+**/lexer.o
+**/linker.o
+**/memory_layout.o
+**/nc8x16-as
+**/nc8x16-ld
+**/object_files_parser.o
+**/parser.o
+**/relocation_handler.o
+**/symbol_resolver.o
