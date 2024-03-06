@@ -167,7 +167,12 @@ void Lexer::classifyAndCreateToken(const std::string& operand) {
         tokens.emplace_back(TokenType::Operand2, operand, parseOperand(operand.substr(1)));
     } else if (std::regex_match(operand, std::regex(R"(^[a-zA-Z_][a-zA-Z_0-9]*$)"))) { // Label
         //get label line number
-        auto labelLineNum = static_cast<uint16_t>(labelTable[operand]);
+        uint16_t labelLineNum;
+        auto it = labelTable.find(operand);
+        if (it != labelTable.end()) {
+            // Key exists in the map, access its value
+            labelLineNum = static_cast<uint16_t>(it->second);
+        }
         tokens.emplace_back(TokenType::Label, operand, lineNumberToAddressMap[labelLineNum]);
     } else {
         tokens.emplace_back(TokenType::Unknown, operand, 0);

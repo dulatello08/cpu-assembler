@@ -107,6 +107,7 @@ int main(int argc, char* argv[]) {
     auto lexer = new Lexer(conf);
 
     lexer->firstPass(lines);
+
     lexer->lex(lines);
 
     for (const auto& token : lexer->tokens) {
@@ -133,7 +134,9 @@ int main(int argc, char* argv[]) {
 
     // Iterate through the vector and print each element in hex
     auto object_file_gen = new ObjectFileGenerator(metadata, parser->getObjectCode(), relocation_entries);
-
+    for (const auto& entry : relocation_entries) {
+        std::cout << "Label: " << entry.label << ", Address: 0x" << std::hex << entry.address << std::dec << std::endl;
+    }
     object_file_gen->generate_object_file(output_filename);
     std::vector<uint8_t> object_file = object_file_gen->get_object_file();
 
