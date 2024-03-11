@@ -115,7 +115,7 @@ bool object_files_parser::validate_all_files() {
 }
 
 void object_files_parser::pre_relocate_all_files() {
-    for (size_t file_index = 0; file_index < object_file_vectors.size(); ++file_index) {
+    for (int file_index = static_cast<int>(object_file_vectors.size()) - 1; file_index >= 0; --file_index) {
         auto& code = object_file_vectors[file_index];
         for (size_t i = 0; i < code.size(); ++i) {
             if (code[i] == 0xea) { // Found a label reference
@@ -132,9 +132,16 @@ void object_files_parser::pre_relocate_all_files() {
 
                 std::string label_name(reinterpret_cast<char*>(&code[i + 1]), end_index - (i + 1));
                 int label_index = -1;
-                for (size_t label_idx = 0; label_idx < label_info_per_file[file_index].size(); ++label_idx) {
-                    if (label_info_per_file[file_index][label_idx].name == label_name) {
-                        label_index = static_cast<int>(label_idx);
+                size_t absolute_index = 0;
+                for (auto& fi : label_info_per_file) {
+                    for (auto& li : fi) {
+                        if (li.name == label_name) {
+                            label_index = static_cast<int>(absolute_index);
+                            break;
+                        }
+                        ++absolute_index;
+                    }
+                    if (label_index != -1) {
                         break;
                     }
                 }

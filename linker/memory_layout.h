@@ -17,9 +17,9 @@ public:
     std::vector<uint8_t> memory;
     explicit memory_layout(const std::vector<std::vector<uint8_t>>& object_files) : object_files(object_files) {
         extract_object_codes();
-        for (const auto &code: object_codes) {
-            print_hex_dump(code);
-        }
+        // for (const auto &code: object_codes) {
+        //     print_hex_dump(code);
+        // }
         global_start_range = find_global_start_range();
         write_memory_layout();
     }

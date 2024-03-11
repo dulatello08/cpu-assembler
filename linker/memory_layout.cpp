@@ -12,7 +12,6 @@
 
 void memory_layout::extract_object_codes() {
     for (const auto& file : object_files) {
-        print_hex_dump(file);
         std::istringstream file_stream(std::string(file.begin(), file.end()));
 
         // Skip the assembler version, compilation time, and source file name
