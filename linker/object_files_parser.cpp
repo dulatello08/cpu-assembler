@@ -13,6 +13,7 @@
 
 #if defined(__linux__) && !defined(__APPLE__)
 #include <arpa/inet.h>
+#include <cstring>
 
 uint64_t htonll(uint64_t hostlonglong) {
     uint32_t high_part = htonl((uint32_t)(hostlonglong >> 32));
@@ -117,7 +118,22 @@ bool object_files_parser::validate_all_files() {
 void object_files_parser::pre_relocate_all_files() {
     for (int file_index = static_cast<int>(object_file_vectors.size()) - 1; file_index >= 0; --file_index) {
         auto& code = object_file_vectors[file_index];
-        for (size_t i = 0; i < code.size(); ++i) {
+
+        // Extract the original size of the object code
+        std::istringstream file_stream(std::string(code.begin(), code.end()));
+        std::string assembler_version;
+        std::getline(file_stream, assembler_version, '\0');
+        unsigned long compilation_time;
+        file_stream.read(reinterpret_cast<char*>(&compilation_time), sizeof(compilation_time));
+        std::string source_file_name;
+        std::getline(file_stream, source_file_name, '\0');
+        std::uint32_t original_object_code_length;
+        file_stream.read(reinterpret_cast<char*>(&original_object_code_length), sizeof(original_object_code_length));
+        size_t header_size = file_stream.tellg();
+
+        size_t original_code_size = code.size();
+
+        for (size_t i = header_size; i < code.size(); ++i) {
             if (code[i] == 0xea) { // Found a label reference
                 size_t start_index = i;
                 size_t end_index = i + 1;
@@ -158,5 +174,9 @@ void object_files_parser::pre_relocate_all_files() {
                 i = start_index + 1; // Update the index to continue searching
             }
         }
+
+        // Update the size of the object code in the vector
+        std::uint32_t new_object_code_length = original_object_code_length - (original_code_size - code.size());
+        std::memcpy(&code[header_size - sizeof(original_object_code_length)], &new_object_code_length, sizeof(new_object_code_length));
     }
 }
