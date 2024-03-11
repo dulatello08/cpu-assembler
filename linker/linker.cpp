@@ -21,16 +21,12 @@ linker_config parseLinkerConfig(const std::string& config_filename);
 void print_hex_dump(const std::vector<uint8_t>& object_file) {
     if (object_file.empty()) return; // Early return if the input vector is empty
 
-    std::vector<uint8_t> prev_line(16, 0); // Previous line for comparison, initialized to avoid first line match
+    std::vector<uint8_t> prev_line(16, 0xFF); // Previous line for comparison, initialized to a non-matching value
     bool is_skipping = false;
     size_t prev_line_start = 0; // Offset of the start of the previous line
 
     for (size_t i = 0; i < object_file.size(); i += 16) {
-        std::vector<uint8_t> current_line;
-        size_t line_end = std::min(object_file.size(), i + 16);
-        for (size_t j = i; j < line_end; ++j) {
-            current_line.push_back(object_file[j]);
-        }
+        std::vector<uint8_t> current_line(object_file.begin() + i, object_file.begin() + std::min(object_file.size(), i + 16));
 
         if (current_line == prev_line) {
             if (!is_skipping) {
@@ -143,6 +139,14 @@ int main(const int argc, char* argv[]) {
     auto memory_class = new memory_layout(o_files_parser->object_file_vectors);
 
     print_hex_dump(memory_class->memory);
+
+    std::ofstream output_file(outputFile, std::ios::binary);
+    if (output_file.is_open()) {
+        output_file.write(reinterpret_cast<const char*>(memory_class->memory.data()), static_cast<std::streamsize>(memory_class->memory.size()));
+        output_file.close();
+    } else {
+        std::cerr << "Failed to open file: " << outputFile << std::endl;
+    }
 
 
     delete o_files_parser;

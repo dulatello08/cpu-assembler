@@ -9,3 +9,4 @@
 **/parser.o
 **/relocation_handler.o
 **/symbol_resolver.o
+*.out
