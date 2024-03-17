@@ -6,7 +6,9 @@
 
 #include <sstream>
 #include <fstream>
+#include <iostream>
 #include <limits>
+#include <map>
 
 #include "linker.h"
 
@@ -26,6 +28,7 @@ void memory_layout::extract_object_codes() {
         // Read object code
         std::vector<uint8_t> object_code(object_code_length);
         file_stream.read(reinterpret_cast<char*>(object_code.data()), object_code_length);
+        print_hex_dump(object_code);
 
         // Store object code
         object_codes.push_back(std::move(object_code));
@@ -37,7 +40,7 @@ void memory_layout::extract_object_codes() {
     }
 }
 
-std::pair<int, int> memory_layout::find_global_start_range() const {
+std::map<std::string, std::pair<int, int>> memory_layout::find_label_ranges() const {
     std::istringstream file_stream(std::string(object_files.front().begin(), object_files.front().end()));
 
     // Skip the assembler version, compilation time, and source file name
@@ -56,7 +59,9 @@ std::pair<int, int> memory_layout::find_global_start_range() const {
     uint16_t relocation_table_size;
     file_stream.read(reinterpret_cast<char*>(&relocation_table_size), sizeof(relocation_table_size));
 
-    std::vector<std::pair<std::string, uint16_t>> labelAddresses;
+    std::map<std::string, std::pair<int, int>> label_ranges;
+    uint16_t prev_address = 0;
+    std::string prev_label;
     for (uint16_t i = 0; i < relocation_table_size; ++i) {
         std::string label_name;
         std::getline(file_stream, label_name, '\0');
@@ -64,41 +69,34 @@ std::pair<int, int> memory_layout::find_global_start_range() const {
         uint16_t address;
         file_stream.read(reinterpret_cast<char*>(&address), sizeof(address));
 
-        labelAddresses.emplace_back(label_name, address);
+        if (i != 0) {
+            label_ranges[prev_label] = std::make_pair(prev_address, address);
+        }
+
+        prev_label = label_name;
+        prev_address = address;
     }
 
-    // Find the start address of the _start label
-    auto start_it = std::find_if(labelAddresses.begin(), labelAddresses.end(),
-                                 [](const auto& pair) { return pair.first == "_start"; });
+    // Add the last label range
+    label_ranges[prev_label] = std::make_pair(prev_address, object_code_length);
 
-    if (start_it == labelAddresses.end()) {
-        throw std::runtime_error("Missing _start label");
-    }
-
-    // Find the label immediately following _start
-    auto next_it = std::next(start_it);
-    if (next_it == labelAddresses.end()) {
-        throw std::runtime_error("No label found after _start");
-    }
-
-    return std::make_pair(start_it->second, next_it->second);
+    return label_ranges;
 }
+
 
 void memory_layout::write_memory_layout() {
     // Initialize memory with zeros
     memory.resize(0x10000, 0);
 
     // Write start label code to 0x0 to 0xff
-    const auto& start_label_code = object_codes.front();
-    print_hex_dump(start_label_code);
-    std::copy(start_label_code.begin() + global_start_range.first,
-              start_label_code.begin() + global_start_range.second,
-              memory.begin());
+    const auto& start_label_code = std::vector<uint8_t>(object_codes.front().begin() + global_start_range.first,
+                                                         object_codes.front().begin() + global_start_range.second);
+    std::copy(start_label_code.begin(), start_label_code.end(), memory.begin());
 
     // Write everything else from 0xf000 to 0xffff, spaced with 4 bytes of 0
     size_t address = 0xf000;
     for (const auto& code : object_codes) {
-        if (&code != &object_codes.front()) { // Skip the start label code
+        if (&code != &start_label_code) { // Skip the start label code
             std::copy(code.begin(), code.end(), memory.begin() + address);
             address += code.size() + 4; // Space with 4 bytes of 0
         }

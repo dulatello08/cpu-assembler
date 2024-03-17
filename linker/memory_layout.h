@@ -12,20 +12,17 @@
 class memory_layout {
     std::vector<std::vector<uint8_t>> object_files;
     std::vector<std::vector<uint8_t>> object_codes;
-    std::pair<int, int> global_start_range;
+    std::map<std::string, std::pair<int, int>> label_ranges;
 public:
     std::vector<uint8_t> memory;
     explicit memory_layout(const std::vector<std::vector<uint8_t>>& object_files) : object_files(object_files) {
         extract_object_codes();
-        // for (const auto &code: object_codes) {
-        //     print_hex_dump(code);
-        // }
-        global_start_range = find_global_start_range();
+        label_ranges = find_label_ranges();
         write_memory_layout();
     }
 private:
     void extract_object_codes();
-    std::pair<int, int> find_global_start_range() const;
+    std::map<std::string, std::pair<int, int>> find_label_ranges() const;
     void write_memory_layout();
 };
 
