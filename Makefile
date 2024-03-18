@@ -1,6 +1,6 @@
 # Compiler settings
 CXX = clang++
-CXXFLAGS = -Wall -Wextra -Wpedantic -std=c++20 -O2 -I.
+CXXFLAGS = -Wall -Wextra -Wpedantic -std=c++20 -O2 -I. -g
 LDFLAGS = -v
 
 # Project files
