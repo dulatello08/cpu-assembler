@@ -8,6 +8,7 @@
 #include <vector>
 #include <cstdint>
 #include <map>
+#include <string>
 
 #include "linker.h"
 

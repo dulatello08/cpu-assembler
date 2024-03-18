@@ -89,7 +89,16 @@ std::map<std::string, std::vector<uint8_t>> memory_layout::extract_label_codes()
 
     for (const auto& [label_name, range] : label_ranges) {
         auto [file_index, start, end] = range;
-        std::vector<uint8_t> code(object_codes[file_index].begin() + start, object_codes[file_index].begin() + end);
+
+        std::vector<uint8_t> code;
+        if (start <= end) {
+            code = std::vector<uint8_t>(object_codes[file_index].begin() + start, object_codes[file_index].begin() + end);
+        } else {
+            // Extract in reverse order if start is greater than end
+            code = std::vector<uint8_t>(object_codes[file_index].rbegin() + (object_codes[file_index].size() - start),
+                                        object_codes[file_index].rbegin() + (object_codes[file_index].size() - end));
+        }
+
         label_codes[label_name] = std::move(code);
     }
 
@@ -110,7 +119,7 @@ void memory_layout::write_memory_layout() {
     size_t address = 0xf000;
     for (const auto& label_code : label_codes) {
         if (label_code.first != "_start") { // Skip the start label code
-            std::ranges::copy(label_code.second.begin(), label_code.second.end(), memory.begin() + address);
+            std::copy(label_code.second.begin(), label_code.second.end(), memory.begin() + address);
             label_memory_addresses[label_code.first] = address; // Store the memory address of the label
             address += label_code.second.size() + 4; // Space with 4 bytes of 0
         }
