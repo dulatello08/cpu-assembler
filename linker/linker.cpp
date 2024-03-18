@@ -136,7 +136,13 @@ int main(const int argc, char* argv[]) {
     o_files_parser->pre_relocate_all_files();
     o_files_parser->log_label_info();
 
-    auto memory_class = new memory_layout(o_files_parser->object_file_vectors);
+    std::vector<LabelInfo> label_info_per_file_flat;
+
+    for (const auto& inner_vector : o_files_parser->label_info_per_file) {
+        label_info_per_file_flat.insert(label_info_per_file_flat.end(), inner_vector.begin(), inner_vector.end());
+    }
+
+    auto memory_class = new memory_layout(o_files_parser->object_file_vectors, label_info_per_file_flat);
 
     print_hex_dump(memory_class->memory);
 

@@ -103,15 +103,40 @@ void memory_layout::write_memory_layout() {
 
     // Write start label code to 0x0 to 0xff
     const auto& start_label_code = label_codes["_start"];
-    print_hex_dump(start_label_code);
     std::copy(start_label_code.begin(), start_label_code.end(), memory.begin());
+    label_memory_addresses["_start"] = 0; // Store the memory address of the _start label
 
     // Write everything else from 0xf000 to 0xffff, spaced with 4 bytes of 0
     size_t address = 0xf000;
     for (const auto& label_code : label_codes) {
         if (label_code.first != "_start") { // Skip the start label code
             std::ranges::copy(label_code.second.begin(), label_code.second.end(), memory.begin() + address);
+            label_memory_addresses[label_code.first] = address; // Store the memory address of the label
             address += label_code.second.size() + 4; // Space with 4 bytes of 0
+        }
+    }
+    print_hex_dump(memory);
+}
+
+void memory_layout::relocate_memory_layout() {
+    for (size_t i = 0; i < memory.size(); ++i) {
+        if (memory[i] == 0xea) {
+            if (i + 1 < memory.size()) {
+                uint8_t label_index = memory[i + 1];
+                if (label_index < label_info_per_file.size()) {
+                    const auto& label_info = label_info_per_file[label_index];
+
+                    auto it = label_memory_addresses.find(label_info.name);
+                    if (it != label_memory_addresses.end()) {
+                        uint16_t label_address = it->second;
+                        // Convert to big endian
+                        memory[i] = static_cast<uint8_t>((label_address >> 8) & 0xFF);
+                        memory[i + 1] = static_cast<uint8_t>(label_address & 0xFF);
+                    }
+                }
+            }
+            // Skip the next byte as it has already been processed
+            ++i;
         }
     }
 }

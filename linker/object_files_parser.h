@@ -9,10 +9,7 @@
 #include <fstream>
 #include <iostream>
 
-struct LabelInfo {
-    std::string name;
-    uint16_t address;
-};
+#include "linker.h"
 
 class object_files_parser {
 public:
