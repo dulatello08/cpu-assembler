@@ -9,7 +9,7 @@
 #include <ctime>
 #include <vector>
 
-#define HASH_TABLE_SIZE 1024 // 1KB
+#define HASH_TABLE_SIZE 4096 // 4KB
 #define PRIME_FACTOR 101      // Prime factor for the hash calculation
 #define MIX_FACTOR 137       // Mix factor to enhance distribution
 
