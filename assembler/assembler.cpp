@@ -108,6 +108,10 @@ int main(int argc, char* argv[]) {
 
     lexer->firstPass(lines);
 
+    for (const auto& label : lexer->labelTable) {
+        std::cout << label.first << label.second << std::endl;
+    }
+
     lexer->lex(lines);
 
     for (const auto& token : lexer->tokens) {

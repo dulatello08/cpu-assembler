@@ -101,7 +101,7 @@ void Lexer::firstPass(std::vector<std::string> &lines) {
         else if (std::regex_match(line, match, labelPattern)) {
             address++;
             labelTable[match.str(1)] = lineNum;
-            std::cout << "label" << match.str(1) << std::endl;
+            std::cout << "label " << match.str(1) << std::endl;
         }
         else {
             // Expand macros in the line if not a macro or label definition
@@ -167,7 +167,7 @@ void Lexer::classifyAndCreateToken(const std::string& operand) {
         tokens.emplace_back(TokenType::Operand2, operand, parseOperand(operand.substr(1)));
     } else if (std::regex_match(operand, std::regex(R"(^[a-zA-Z_][a-zA-Z_0-9]*$)"))) { // Label
         //get label line number
-        uint16_t labelLineNum;
+        uint16_t labelLineNum = 0;
         auto it = labelTable.find(operand);
         if (it != labelTable.end()) {
             // Key exists in the map, access its value
