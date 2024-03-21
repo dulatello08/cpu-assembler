@@ -12,10 +12,15 @@
 #include <getopt.h>
 #include <cstdint>
 #include "lexer.h"
+#include <algorithm>
 #include "parser.h"
 #include "object_file_generator.h"
 #include <iomanip>
 #include <cctype> // For std::isprint
+
+bool compareBySecond(const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) {
+    return a.second < b.second;
+}
 
 void print_hex_dump(const std::vector<uint8_t>& object_file) {
     for (size_t i = 0; i < object_file.size(); ++i) {
@@ -120,11 +125,17 @@ int main(int argc, char* argv[]) {
 
     std::vector<Parser::RelocationEntry> relocation_entries;
 
+
     relocation_entries.reserve(lexer->labelTable.size());
     for (const auto& pair : lexer->labelTable) {
         relocation_entries.emplace_back(pair.first, lexer->lineNumberToAddressMap[pair.second]);
     }
-    std::reverse(relocation_entries.begin(), relocation_entries.end());
+
+    // Sort relocation_entries by the address field
+    std::sort(relocation_entries.begin(), relocation_entries.end(),
+              [](const Parser::RelocationEntry& a, const Parser::RelocationEntry& b) {
+                  return a.address < b.address;
+              });
 
     Parser::Metadata metadata = {
         "0.1",
