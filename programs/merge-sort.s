@@ -1,4 +1,4 @@
-; Bubble sort implementation for NeoCore 8x16 CPU
+; (Not actually merge sort) Bubble sort implementation for NeoCore 8x16 CPU
 ; Registers:
 ;   0 = Starting address of the array
 ;   1 = Current index j in the inner loop
@@ -29,7 +29,7 @@
 
     ; Compare and swap if necessary
     SBR 3 4 #101
-    BRZ no_swap
+    BRZ skip_swap
 
     ;Gotta swap
     PSH 1
@@ -39,6 +39,10 @@
     PSH 1
     PSH 0
     RSM 4
+    BRN no_swap
+
+.skip_swap
+    SUB 1 #1
     BRN no_swap
 
 .no_swap
@@ -54,4 +58,4 @@
     BRN sort_loop
 
 .exit
-    HLT
+    OSR
