@@ -10,7 +10,9 @@
     POP 5
     JSR sort_loop
     ;we have sorted array at #f101 with size of it at f100
-    STO 1 #0
+    STO 1 #1
+    ADD 5 #1
+    STO 6 #20
     BRN print_loop
 .continue_start
     HLT
@@ -20,6 +22,7 @@
     PSH 0
     RLD 2
     JSR print_8bits
+    STM 6 #eff7
     ADD 1 #1
     BRR 5 1 continue_start
     BRN print_loop

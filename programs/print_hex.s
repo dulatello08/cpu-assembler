@@ -6,7 +6,7 @@ CHAR_MAP_LOW_ADDR = $0x50
     STO 3 $CHAR_MAP_HIGH_ADDR
     STO 4 $CHAR_MAP_LOW_ADDR
     PSH 2
-    LSH 2 #4
+    RSH 2 #4
     ADR 2 4 #100
     LDM 4 #100
     PSH 4

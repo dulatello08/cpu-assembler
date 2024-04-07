@@ -100,10 +100,13 @@
   num_ops: 3
 - opcode: 0x20
   name: "AND"
-  num_ops: 2
+  num_ops: 1
 - opcode: 0x21
   name: "ORR"
-  num_ops: 2
+  num_ops: 1
 - opcode: 0x22
   name: "MULL"
   num_ops: 2
+- opcode: 0x21
+  name: "XOR"
+  num_ops: 1
