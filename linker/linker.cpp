@@ -26,6 +26,7 @@ void print_hex_dump(const std::vector<uint8_t>& object_file) {
     size_t prev_line_start = 0; // Offset of the start of the previous line
 
     for (size_t i = 0; i < object_file.size(); i += 16) {
+        // Get the current line of bytes
         std::vector<uint8_t> current_line(object_file.begin() + i, object_file.begin() + std::min(object_file.size(), i + 16));
 
         if (current_line == prev_line) {
