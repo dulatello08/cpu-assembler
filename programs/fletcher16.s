@@ -1,5 +1,5 @@
 DATA_BLOCK_ST_ADDR_1 = $0xf0
-DATA_BLOCK_ST_ADDR_2 = $0x40
+DATA_BLOCK_ST_ADDR_2 = $0x50
 DATA_BLOCK_SIZE = $0x10
 RESET_VAL = $0x42
 ; register 0 sum1; 1 sum2.
@@ -23,12 +23,12 @@ RESET_VAL = $0x42
     PSH 2
     RLD 6
     ADR 6 0 #0x100
+    LDM 0 #0x100
     BRO main_1
     STO 0 $RESET_VAL
     BRN main_1
 
 .main_1
-    LDM 0 #0x100
     XOR 1 0
     BRN main_2
 
