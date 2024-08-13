@@ -7,6 +7,7 @@
 
 
 #include <vector>
+#include <cstdint>
 
 struct linker_config {
     uint16_t start_label_address;
