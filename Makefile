@@ -1,7 +1,7 @@
 # Compiler settings
-CXX = clang++
+CXX = g++
 CXXFLAGS = -Wall -Wextra -Wpedantic -std=c++20 -O0 -I. -g
-LDFLAGS = -v
+LDFLAGS =
 
 # Project files
 ASSEMBLER_SOURCES = assembler/assembler.cpp assembler/lexer.cpp assembler/parser.cpp
