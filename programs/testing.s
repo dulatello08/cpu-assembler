@@ -1,8 +1,6 @@
 ._start
-    STO 2 #f0              ; Initialize addr1
-    STO 3 #50              ; Initialize addr2
-    STO 4 #10              ; Initialize block size
-    JSR calculate_checksum   ; Call the checksum subroutine
-    STM 0 #ff                ; Store sum1 result in memory
-    STM 1 #ff                ; Store sum2 result in memory
+    STO 0 #b2
+    STO 1 #5
+    JSR rotate_left_time_optimized
+    STM 0 #ff                ; Store result in memory
     HLT                      ; Halt
