@@ -1,6 +1,6 @@
 ._start
-    STO 0 #b2
-    STO 1 #5
-    JSR rotate_left_time_optimized
-    STM 0 #ff                ; Store result in memory
+    STO 2 #f0
+    STO 3 #50
+    STO 4 #28
+    JSR print
     HLT                      ; Halt
