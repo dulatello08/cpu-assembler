@@ -159,7 +159,6 @@ int main(int argc, char* argv[]) {
 
     delete lexer;
     delete object_file_gen;
-    // Your processing logic here
 
     return 0;
 }

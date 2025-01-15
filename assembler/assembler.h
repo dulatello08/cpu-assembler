@@ -14,21 +14,6 @@
 #define PRIME_FACTOR 101      // Prime factor for the hash calculation
 #define MIX_FACTOR 137       // Mix factor to enhance distribution
 
-// Enhanced hash function
-inline unsigned int hash_function(const char *instr_string) {
-    unsigned int hash = 0;
-    // Assuming instr_string points to at least four characters
-    auto ascii_1 = (unsigned int)instr_string[0];
-    auto ascii_2 = (unsigned int)instr_string[1];
-    auto ascii_3 = (unsigned int)instr_string[2];
-    auto ascii_4 = (unsigned int)instr_string[3];
-
-    // Calculate hash based on the enhanced formula
-    hash = (((ascii_1 ^ (ascii_2 << 5)) + (ascii_3 ^ (ascii_4 << 5)) * PRIME_FACTOR) ^ MIX_FACTOR) % HASH_TABLE_SIZE;
-
-    return hash;
-}
-
 enum class TokenType {
     Label,
     Instruction,
@@ -47,16 +32,13 @@ public:
         : type(type), lexeme(std::move(lexeme)), data(data) {}
 };
 
-inline uint8_t getOpCode(const std::string& instruction, std::vector<uint8_t> conf) {
-    return conf.at(hash_function(instruction.c_str()));
-}
-
-inline uint8_t getNumOps(const std::string& instruction, std::vector<uint8_t> conf) {
-    return conf.at(hash_function(instruction.c_str()) + 1);
-}
-
-inline uint8_t getOp1Mode(const std::string& instruction, std::vector<uint8_t> conf) {
-    return conf.at(hash_function(instruction.c_str()) + 2);
+inline uint8_t getOpCode(const std::string &instr, const std::vector<uint8_t> &conf) {
+    for(size_t i=4;i<conf.size();) {
+        if(!strncmp((char*)&conf[i+1], instr.c_str(), instr.size())) return conf[i];
+        uint32_t sc = *(uint32_t*)&conf[i+1+32], oc = *(uint32_t*)&conf[i+1+32+4+2*sc];
+        i += 1 + 32 + 4 + 2*sc + 4 + (32 + 4)*oc;
+    }
+    return 0xFF;
 }
 
 inline time_t get_compile_unix_time() {

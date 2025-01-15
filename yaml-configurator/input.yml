@@ -1,112 +1,206 @@
 - opcode: 0x00
-  name: "NOP"
-  num_ops: 0
+  name: "nop"
+  specifiers: []
+  operands: []
+  length: 2
+
 - opcode: 0x01
-  name: "ADD"
-  num_ops: 2
+  name: "add"
+  specifiers:
+    - mode: 0x00
+      length: 6
+    - mode: 0x01
+      length: 4
+    - mode: 0x02
+      length: 6
+  operands:
+    - rd:
+        width: 8
+    - rn:
+        width: 8
+    - operand_2:
+        width: 16
+    - normAddressing:
+        width: 32
+
 - opcode: 0x02
-  name: "SUB"
-  num_ops: 2
+  name: "sub"
+  specifiers:
+    - mode: 0x00
+      length: 6
+    - mode: 0x01
+      length: 4
+    - mode: 0x02
+      length: 6
+  operands:
+    - rd:
+        width: 8
+    - rn:
+        width: 8
+    - operand_2:
+        width: 16
+    - normAddressing:
+        width: 32
+
 - opcode: 0x03
-  name: "MUL"
-  num_ops: 2
+  name: "mul"
+  specifiers:
+    - mode: 0x00
+      length: 6
+    - mode: 0x01
+      length: 4
+    - mode: 0x02
+      length: 6
+  operands:
+    - rd:
+        width: 8
+    - rn:
+        width: 8
+    - operand_2:
+        width: 16
+    - normAddressing:
+        width: 32
+
 - opcode: 0x04
-  name: "ADM"
-  num_ops: 3
+  name: "and"
+  specifiers:
+    - mode: 0x00
+      length: 6
+    - mode: 0x01
+      length: 4
+    - mode: 0x02
+      length: 6
+  operands:
+    - rd:
+        width: 8
+    - rn:
+        width: 8
+    - operand_2:
+        width: 16
+    - normAddressing:
+        width: 32
+
 - opcode: 0x05
-  name: "SBM"
-  num_ops: 3
+  name: "or"
+  specifiers:
+    - mode: 0x00
+      length: 6
+    - mode: 0x01
+      length: 4
+    - mode: 0x02
+      length: 6
+  operands:
+    - rd:
+        width: 8
+    - rn:
+        width: 8
+    - operand_2:
+        width: 16
+    - normAddressing:
+        width: 32
+
 - opcode: 0x06
-  name: "MLM"
-  num_ops: 3
+  name: "xor"
+  specifiers:
+    - mode: 0x00
+      length: 6
+    - mode: 0x01
+      length: 4
+    - mode: 0x02
+      length: 6
+  operands:
+    - rd:
+        width: 8
+    - rn:
+        width: 8
+    - operand_2:
+        width: 16
+    - normAddressing:
+        width: 32
+
 - opcode: 0x07
-  name: "ADR"
-  num_ops: 3
+  name: "lsh"
+  specifiers:
+    - mode: 0x00
+      length: 6
+    - mode: 0x01
+      length: 4
+    - mode: 0x02
+      length: 6
+  operands:
+    - rd:
+        width: 8
+    - rn:
+        width: 8
+    - operand_2:
+        width: 16
+    - normAddressing:
+        width: 32
+
 - opcode: 0x08
-  name: "SBR"
-  num_ops: 3
-- opcode: 0x09
-  name: "MLR"
-  num_ops: 3
-- opcode: 0x0A
-  name: "CLZ"
-  num_ops: 1
-- opcode: 0x0B
-  name: "STO"
-  num_ops: 2
-- opcode: 0x0C
-  name: "STM"
-  num_ops: 3
-- opcode: 0x0D
-  name: "LDM"
-  num_ops: 3
-- opcode: 0x0E
-  name: "PSH"
-  num_ops: 1
-- opcode: 0x0F
-  name: "POP"
-  num_ops: 1
-- opcode: 0x10
-  name: "BRN"
-  num_ops: 2
-  op1_mode: 1
-- opcode: 0x11
-  name: "BRZ"
-  num_ops: 2
-  op1_mode: 1
-- opcode: 0x12
-  name: "BRO"
-  num_ops: 2
-  op1_mode: 1
-- opcode: 0x13
-  name: "BRR"
-  num_ops: 3
-- opcode: 0x14
-  name: "BNR"
-  num_ops: 3
-- opcode: 0x15
-  name: "HLT"
-  num_ops: 0
-- opcode: 0x16
-  name: "JSR"
-  num_ops: 2
-  op1_mode: 1
-- opcode: 0x17
-  name: "OSR"
-  num_ops: 0
-- opcode: 0x18
-  name: "RSM"
-  num_ops: 1
-- opcode: 0x19
-  name: "RLD"
-  num_ops: 1
-- opcode: 0x1A
-  name: "ENI"
-  num_ops: 0
-- opcode: 0x1B
-  name: "DSI"
-  num_ops: 0
-- opcode: 0x1C
-  name: "LSH"
-  num_ops: 2
-- opcode: 0x1D
-  name: "LSR"
-  num_ops: 3
-- opcode: 0x1E
-  name: "RSH"
-  num_ops: 2
-- opcode: 0x1F
-  name: "RSR"
-  num_ops: 3
-- opcode: 0x20
-  name: "AND"
-  num_ops: 1
-- opcode: 0x21
-  name: "ORR"
-  num_ops: 1
-- opcode: 0x22
-  name: "MULL"
-  num_ops: 2
-- opcode: 0x23
-  name: "XOR"
-  num_ops: 1
+  name: "rsh"
+  specifiers:
+    - mode: 0x00
+      length: 6
+    - mode: 0x01
+      length: 4
+    - mode: 0x02
+      length: 6
+  operands:
+    - rd:
+        width: 8
+    - rn:
+        width: 8
+    - operand_2:
+        width: 16
+    - normAddressing:
+        width: 32
+
+- opcode: 0x00
+  name: "mov"
+  specifiers:
+    - mode: 0x00
+      length: 6
+    - mode: 0x01
+      length: 4
+    - mode: 0x02
+      length: 6
+    - mode: 0x03
+      length: 6
+    - mode: 0x04
+      length: 6
+    - mode: 0x05
+      length: 6
+    - mode: 0x06
+      length: 6
+    - mode: 0x07
+      length: 6
+    - mode: 0x08
+      length: 6
+    - mode: 0x09
+      length: 6
+    - mode: 0x0A
+      length: 6
+    - mode: 0x0B
+      length: 6
+    - mode: 0x0C
+      length: 6
+    - mode: 0x0D
+      length: 6
+    - mode: 0x0E
+      length: 6
+    - mode: 0x0F
+      length: 6
+    - mode: 0x10
+      length: 6
+    - mode: 0x11
+      length: 6
+  operands:
+    - rd:
+        width: 8
+    - rn:
+        width: 8
+    - rn1:
+        width: 8
+    - normAddressing:
+        width: 32
