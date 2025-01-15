@@ -18,35 +18,31 @@
 #include <iomanip>
 #include <cctype> // For std::isprint
 
-bool compareBySecond(const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) {
-    return a.second < b.second;
-}
-
-void print_hex_dump(const std::vector<uint8_t>& object_file) {
-    for (size_t i = 0; i < object_file.size(); ++i) {
-        // Print offset at the beginning of each line
-        if (i % 16 == 0) {
-            std::cout << std::setw(8) << std::setfill('0') << std::hex << i << ": ";
-        }
-
-        // Print the element in hex format
-        std::cout << std::setw(2) << std::setfill('0') << static_cast<int>(object_file[i]) << " ";
-
-        // Print ASCII representation at the end of each line
-        if ((i + 1) % 16 == 0 || i + 1 == object_file.size()) {
-            // Calculate the number of spaces needed to align the ASCII output
-            int spaces_needed = static_cast<int>((16 - ((i + 1) % 16)) % 16);
-            std::cout << std::string(spaces_needed * 3, ' ') << "|";
-
-            // Print ASCII characters
-            for (size_t j = i - (i % 16); j <= i; ++j) {
-                char c = static_cast<char>(object_file[j]);
-                std::cout << (std::isprint(c) ? c : '.');
-            }
-            std::cout << "|\n";
-        }
-    }
-}
+// void print_hex_dump(const std::vector<uint8_t>& object_file) {
+//     for (size_t i = 0; i < object_file.size(); ++i) {
+//         // Print offset at the beginning of each line
+//         if (i % 16 == 0) {
+//             std::cout << std::setw(8) << std::setfill('0') << std::hex << i << ": ";
+//         }
+//
+//         // Print the element in hex format
+//         std::cout << std::setw(2) << std::setfill('0') << static_cast<int>(object_file[i]) << " ";
+//
+//         // Print ASCII representation at the end of each line
+//         if ((i + 1) % 16 == 0 || i + 1 == object_file.size()) {
+//             // Calculate the number of spaces needed to align the ASCII output
+//             int spaces_needed = static_cast<int>((16 - ((i + 1) % 16)) % 16);
+//             std::cout << std::string(spaces_needed * 3, ' ') << "|";
+//
+//             // Print ASCII characters
+//             for (size_t j = i - (i % 16); j <= i; ++j) {
+//                 char c = static_cast<char>(object_file[j]);
+//                 std::cout << (std::isprint(c) ? c : '.');
+//             }
+//             std::cout << "|\n";
+//         }
+//     }
+// }
 
 int main(int argc, char* argv[]) {
     std::string input_filename;
@@ -108,57 +104,6 @@ int main(int argc, char* argv[]) {
     while (std::getline(input_file, line)) {
         lines.push_back(line);
     }
-
-    auto lexer = new Lexer(conf);
-
-    lexer->firstPass(lines);
-
-    for (const auto& label : lexer->labelTable) {
-        std::cout << label.first << label.second << std::endl;
-    }
-
-    lexer->lex(lines);
-
-    for (const auto& token : lexer->tokens) {
-        std::cout << "Token: Type = " << static_cast<int>(token.type) << ", Lexeme = " << token.lexeme << ", Data/Line = " << token.data << std::endl;
-    }
-
-    std::vector<Parser::RelocationEntry> relocation_entries;
-
-
-    relocation_entries.reserve(lexer->labelTable.size());
-    for (const auto& pair : lexer->labelTable) {
-        relocation_entries.emplace_back(pair.first, lexer->lineNumberToAddressMap[pair.second]);
-    }
-
-    // Sort relocation_entries by the address field
-    std::sort(relocation_entries.begin(), relocation_entries.end(),
-              [](const Parser::RelocationEntry& a, const Parser::RelocationEntry& b) {
-                  return a.address < b.address;
-              });
-
-    Parser::Metadata metadata = {
-        "0.1",
-        get_compile_unix_time(),
-        input_filename
-    };
-
-    auto parser = new Parser(lexer->tokens, metadata, conf, relocation_entries);
-
-    parser->parse();
-
-    // Iterate through the vector and print each element in hex
-    auto object_file_gen = new ObjectFileGenerator(metadata, parser->getObjectCode(), relocation_entries);
-    for (const auto& entry : relocation_entries) {
-        std::cout << "Label: " << entry.label << ", Address: 0x" << std::hex << entry.address << std::dec << std::endl;
-    }
-    object_file_gen->generate_object_file(output_filename);
-    std::vector<uint8_t> object_file = object_file_gen->get_object_file();
-
-    print_hex_dump(object_file);
-
-    delete lexer;
-    delete object_file_gen;
 
     return 0;
 }
