@@ -3,8 +3,8 @@
 **/lexer.o
 **/linker.o
 **/memory_layout.o
-**/nc8x16-as
-**/nc8x16-ld
+**/nc16x32-as
+**/nc16x32-ld
 **/object_files_parser.o
 **/parser.o
 *.out

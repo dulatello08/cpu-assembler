@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Highlighted Editor</title>
+
+    <!-- Tailwind CSS (CDN) -->
+    <link
+            href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+            rel="stylesheet"
+    />
+
+    <style>
+        /* Container for overlapping layers */
+        .editor-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            font-family: Menlo, monospace; /* Use Menlo font with fallback */
+            font-size: 0.875rem; /* Tailwind text-sm */
+            line-height: 1; /* Reduced line-height for shorter caret */
+            color: #fff;
+            background-color: #1a1a1a;
+            overflow: hidden;
+            border: 1px solid #ccc;
+            border-radius: 0.25rem;
+        }
+
+        /* Highlight layer styling */
+        .highlight-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow: auto;
+            padding: 1rem;
+            box-sizing: border-box;
+            line-height: 1; /* Match container for shorter caret effect */
+        }
+
+        /* Transparent textarea styling */
+        .editor-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            resize: none;
+            background: transparent;
+            color: transparent;
+            caret-color: #ffffff;
+            border: none;
+            outline: none;
+            padding: 1rem;
+            font-family: inherit;
+            font-size: inherit;
+            line-height: 1; /* Match container for shorter caret effect */
+            overflow: auto;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+
+<div class="w-full max-w-3xl">
+    <h1 class="text-xl font-semibold mb-4">Naive Syntax Highlighted Editor</h1>
+
+    <!-- Editor Container -->
+    <div class="editor-container" id="editorContainer">
+        <pre class="highlight-layer" id="highlightOutput"></pre>
+        <textarea
+                id="editorInput"
+                class="editor-input"
+                placeholder="Type your machine description here..."
+                oninput="render()"
+                onscroll="syncScroll()"
+        ></textarea>
+    </div>
+</div>
+
+<script>
+    // Separate keyword arrays for green and turquoise highlights
+    const KEYWORDS_GREEN = [
+        'instruction',
+        'opcode',
+        'specifiers',
+        'syntax',
+        'encoding',
+        'length',
+        'sp'
+    ];
+    const KEYWORDS_TURQUOISE = [
+        'rd',
+        'rn',
+        'operand2',
+        'immediate'
+    ];
+
+    function escapeHtml(str) {
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function highlightCode(line) {
+        // 1) Escape HTML
+        let safeLine = escapeHtml(line);
+
+        // 2) Highlight green keywords
+        KEYWORDS_GREEN.forEach((keyword) => {
+            const regex = new RegExp("\\b" + keyword + "\\b", "gi");
+            safeLine = safeLine.replace(regex, (match) => {
+                return `<span class="text-green-400 font-bold">${match}</span>`;
+            });
+        });
+
+        // 3) Highlight turquoise keywords (with the custom color #22d3ee)
+        KEYWORDS_TURQUOISE.forEach((keyword) => {
+            const regex = new RegExp("\\b" + keyword + "\\b", "gi");
+            safeLine = safeLine.replace(regex, (match) => {
+                return `<span style="color: #22d3ee; font-weight: bold">${match}</span>`;
+            });
+        });
+
+        // 4) Highlight quoted strings (wrap them in blue)
+        safeLine = safeLine.replace(/&quot;[^&quot;]*&quot;/g, (match) => {
+            return `<span class="text-blue-400 font-bold">${match}</span>`;
+        });
+
+        return safeLine;
+    }
+
+    function render() {
+        const inputElem = document.getElementById('editorInput');
+        const outputElem = document.getElementById('highlightOutput');
+
+        const lines = inputElem.value.split('\n');
+        let highlighted = '';
+
+        lines.forEach((line) => {
+            highlighted += highlightCode(line) + '\n';
+        });
+
+        outputElem.innerHTML = highlighted;
+    }
+
+    function syncScroll() {
+        const inputElem = document.getElementById('editorInput');
+        const outputElem = document.getElementById('highlightOutput');
+        outputElem.scrollTop = inputElem.scrollTop;
+        outputElem.scrollLeft = inputElem.scrollLeft;
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+        const defaultText = `instruction rsh
+opcode 0x08
+specifiers
+    sp 00
+        syntax "rsh %rd, #%immediate"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [immediate(16)]
+        length 3
+    sp 01
+        syntax "rsh %rd, %rn"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
+        length 2
+    sp 02
+        syntax "rsh %rd, [%operand2]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(32)]
+        length 4`;
+
+        const codeInput = document.getElementById("editorInput");
+        codeInput.value = defaultText;
+        render();
+    });
+</script>
+</body>
+</html>
