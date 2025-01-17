@@ -6,21 +6,25 @@
 #include <fstream>
 #include <cctype>
 #include <algorithm>
+#include <sstream>
 
 // -----------------------------------------------
-// Include the instructions header (not shown here)
-// -----------------------------------------------
-#include "machine_description.h"
-
-// -----------------------------------------------
-// Token Types
+// Token Types / Operand Subtypes
 // -----------------------------------------------
 enum class TokenType {
     Label,
     Instruction,
     Operand,
-    Separator,
     EndOfLine,
+    Unknown
+};
+
+enum class OperandSubtype {
+    Register,
+    Immediate,     // e.g., #0x100, #12
+    Memory,        // e.g., [0x100], [#0x455], ...
+    OffsetMemory,  // e.g., [reg + #0xNNNN]
+    LabelReference,
     Unknown
 };
 
@@ -28,9 +32,12 @@ enum class TokenType {
 // Token Structure
 // -----------------------------------------------
 struct Token {
-    std::string lexeme;
-    TokenType type;
-    std::string data; // Extra data if needed (e.g., register number, immediate value, etc.)
+    std::string lexeme;      // Exact text (including brackets, etc.)
+    TokenType type;          // High-level type
+    OperandSubtype subtype;  // For operands, a more specific classification
+
+    // Optional: store extracted info (e.g. register number, immediate value, label name)
+    std::string data;        // e.g., "0x7000", "1", "_start"
 };
 
 // -----------------------------------------------
@@ -54,12 +61,21 @@ static inline void trim(std::string &s) {
 // -----------------------------------------------
 // First Pass: Collect Macros and Labels
 // -----------------------------------------------
-static void firstPass(const std::vector<std::string>& lines) {
-    std::regex macroRegex(R"(^\s*\$(\w+)\s+(.+)$)");
+static void firstPass(const std::vector<std::string>& lines)
+{
+    // If your assembly lines are of the form:
+    //   $MACRO ADDRESS 0x7000
+    // then let's capture "ADDRESS" as group(1) and "0x7000" as group(2).
+    // That means we look specifically for "$MACRO ..." at the start.
+    std::regex macroRegex(R"(^\s*\$(?:MACRO\s+)?([A-Za-z_]\w+)\s+(.+)$)");
+
+    // For a label definition: "myLabel:" at the start.
+    // Save the line index in labelTable.
     std::regex labelRegex(R"(^\s*([A-Za-z_]\w*):)");
 
     for (size_t i = 0; i < lines.size(); ++i) {
         std::string line = lines[i];
+
         // Remove comments
         auto commentPos = line.find(';');
         if (commentPos != std::string::npos) {
@@ -71,7 +87,11 @@ static void firstPass(const std::vector<std::string>& lines) {
         // Check for macro definition
         std::smatch m;
         if (std::regex_match(line, m, macroRegex)) {
-            std::string macroName = m[1];
+            // In this scenario:
+            // line => "$MACRO ADDRESS 0x7000"
+            // m[1] => "ADDRESS"
+            // m[2] => "0x7000"
+            std::string macroName  = m[1];
             std::string macroValue = m[2];
             trim(macroName);
             trim(macroValue);
@@ -93,29 +113,36 @@ static void firstPass(const std::vector<std::string>& lines) {
 // Expand Macros in a single line
 // -----------------------------------------------
 static std::string expandMacros(const std::string& line) {
-    // We'll replace macros that appear as plain tokens (like ADDRESS)
-    // or inside #ADDRESS, or inside brackets [ADDRESS].
-    // A quick approach is to scan for word-like tokens and check if in macroTable
-    // Then replace them.
-    // For more complex logic, you'd need a more robust parse/replace.
-    // Here, we'll do a simple global approach with a regex capturing word characters:
-    static std::regex macroTokenRegex(R"((?:#?)([A-Za-z_]\w*))");
-    std::string expanded = line;
+    // This captures an optional leading '#' plus a word token (macro name).
+    // Example: "ADDRESS" or "#ADDRESS" => if "ADDRESS" is found in macroTable,
+    // we replace that substring only (the '#' remains in front).
+    static std::regex macroTokenRegex(R"((#?)([A-Za-z_]\w*))");
 
+    std::string expanded = line;
     std::smatch match;
     size_t offset = 0;
+
     while (std::regex_search(expanded.cbegin() + offset, expanded.cend(), match, macroTokenRegex)) {
-        std::string found = match[1];
+        // match[1] is the optional '#'
+        // match[2] is the actual macro name
+        std::string maybeHash = match[1];  // could be ""
+        std::string found     = match[2];  // the macro name
+
         if (macroTable.find(found) != macroTable.end()) {
-            // Replace only if it exactly matches (with or without #) but keep # intact
-            // If text is "#ADDRESS", the found part is "ADDRESS", so we replace only
-            // that chunk. We'll be naive and assume it's a unique substring for this match.
-            // Construct the portion to replace.
-            auto matchPos = match.position(1) + offset;
-            auto matchLen = match.length(1);
+            // We'll replace only the macro name portion, leaving the '#' if present.
+            // So "found" -> macroTable[found], but keep maybeHash in front.
+            // The full match was match[1] + match[2], but we only want to replace the
+            // second part with the expansion, i.e. the substring that matched found.
+            auto matchPos = match.position(2) + offset;  // position of group(2)
+            auto matchLen = match.length(2);             // length of group(2)
+
+            // Replace "found" with macroTable[found]
             expanded.replace(matchPos, matchLen, macroTable[found]);
+
+            // Advance offset to the end of the replaced text
             offset = matchPos + macroTable[found].size();
         } else {
+            // Macro not found, move offset past this match
             offset += match.position(0) + match.length(0);
         }
     }
@@ -123,39 +150,79 @@ static std::string expandMacros(const std::string& line) {
 }
 
 // -----------------------------------------------
+// Operand Parsing Logic
+// -----------------------------------------------
+static OperandSubtype parseOperandSubtype(const std::string &operandText) {
+    // Some naive checks:
+    // 1) Register: if all digits (e.g. "1", "2") or "r1", "r13"
+    // 2) Immediate: if starts with '#'
+    // 3) Memory: if bracketed => [0x100], [#0x455], ...
+    //    - If there's a plus => offset memory
+    // 4) LabelReference: if it starts with alpha or '_'
+    // Otherwise unknown.
+
+    if (operandText.size() >= 2 && operandText.front() == '[' && operandText.back() == ']') {
+        // Check inside
+        std::string inside = operandText.substr(1, operandText.size() - 2);
+        // trim inside to avoid confusion with spaces
+        std::string insideTrimmed = inside;
+        trim(insideTrimmed);
+
+        // If there's a plus, assume offset memory
+        if (insideTrimmed.find('+') != std::string::npos) {
+            return OperandSubtype::OffsetMemory;
+        }
+        return OperandSubtype::Memory;
+    }
+    // Immediate
+    if (!operandText.empty() && operandText[0] == '#') {
+        return OperandSubtype::Immediate;
+    }
+    // Check register: all digits => treat as register, or "rNN"
+    {
+        bool allDigits = !operandText.empty()
+                         && std::all_of(operandText.begin(), operandText.end(), ::isdigit);
+        if (allDigits) {
+            return OperandSubtype::Register;
+        }
+        static std::regex regRegex(R"(^(r\d+)$)");
+        if (std::regex_match(operandText, regRegex)) {
+            return OperandSubtype::Register;
+        }
+    }
+    // If it starts alpha or '_', treat as label
+    if (!operandText.empty() && (std::isalpha(operandText[0]) || operandText[0] == '_')) {
+        return OperandSubtype::LabelReference;
+    }
+
+    // Fallback
+    return OperandSubtype::Unknown;
+}
+
+// -----------------------------------------------
 // Second Pass: Tokenize
 // -----------------------------------------------
+//
+// A frequent problem is splitting on whitespace and commas
+// but then bracketed expressions get split on plus signs or spaces.
+// We'll fix it by using a regex that either matches a bracketed block
+// as a single token or else matches a sequence of non-space, non-comma chars.
+//
 static std::vector<Token> secondPass(const std::vector<std::string>& lines) {
     std::vector<Token> tokens;
-    // Regex to match known patterns
-    // 1) Label: captured in first pass, but we still want to produce a token if it appears.
-    // 2) Instruction: e.g. mov, add, sub, hlt, ...
-    // 3) Operand possibilities:
-    //    - registers (one or more digits)
-    //    - immediate (#0xNNNN or #NNNN)
-    //    - bracketed addressing [something], can be: [register], [immediate], [register + #immediate], etc.
-    // 4) Separator: comma
-    // 5) End of line is just a concept, might store it or skip it.
-    //
-    // We'll handle them in a simple approach line by line.
 
-    // Basic pattern piecewise:
-    // - label definition:  ^\s*(\w+):
-    // - instruction: ^(\w+)
-    // - operand: can be bracket expression or immediate or raw numeric
-    // - We also skip lines with macro definitions (already processed in pass 1).
-    //
-    // We'll do a simpler approach: we remove comments, expand macros, then
-    // split the line by spaces/commas (with care for bracketed expressions).
-    //
-    // For a more robust approach, consider a single regex or a small state machine.
-
-    // Patterns used repeatedly
+    // For a label *by itself*, we already recognized it in pass 1, but we might want a token too.
+    // We'll detect it with a simpler pattern: "label:" ignoring spaces.
     std::regex labelDef(R"(^\s*([A-Za-z_]\w*):\s*$)");
+    // For instructions (heuristic): something that is alpha or underscore + word-chars
     std::regex instructionDef(R"(^[A-Za-z_]\w*$)");
-    std::regex separatorDef(R"(^\s*,\s*$)");
-    // We skip macro definitions in second pass (already handled).
-    // If something looks like: [stuff], #stuff, or plain numeric
+
+    // This regex grabs either:
+    //   1) (\[.*?\]) bracketed text as one token (lazy `.*?` so it won't skip multiple bracket pairs)
+    //   2) or ([^,\s]+) a run of non‐space and non‐comma chars
+    //
+    // That ensures "[2 + 0xffffff]" is matched as one token, no matter spaces or plus sign inside.
+    std::regex tokenRegex(R"((\[.*?\])|([^,\s]+))");
 
     for (size_t i = 0; i < lines.size(); ++i) {
         std::string rawLine = lines[i];
@@ -165,113 +232,85 @@ static std::vector<Token> secondPass(const std::vector<std::string>& lines) {
             rawLine.erase(commentPos);
         }
         trim(rawLine);
-        if (rawLine.empty()) continue;
+        if (rawLine.empty()) {
+            continue;
+        }
 
-        // Skip lines with macros (they were in pass 1).
-        if (!rawLine.empty() && rawLine[0] == '$') {
+        // Skip macro lines (we parsed them in pass 1)
+        if (rawLine.rfind("$", 0) == 0) {
+            // line starts with "$MACRO" => skip
             continue;
         }
 
         // Expand macros
-        std::string line = expandMacros(rawLine);
-        trim(line);
-        if (line.empty()) continue;
+        std::string expanded = expandMacros(rawLine);
+        trim(expanded);
+        if (expanded.empty()) continue;
 
-        // Check if there's a label
+        // Is this a pure label line? (e.g. "myLabel:")
         {
             std::smatch lm;
-            if (std::regex_match(line, lm, labelDef)) {
+            if (std::regex_match(expanded, lm, labelDef)) {
                 Token t;
-                t.lexeme = lm[1];
-                t.type = TokenType::Label;
-                t.data = lm[1];
-                tokens.push_back(t);
-                continue; // nothing else on this line if it's purely a label
-            }
-        }
-
-        // We now split the line by spaces and commas except inside brackets:
-        // We'll do a small manual parse to handle bracket grouping.
-        std::vector<std::string> parts;
-        {
-            bool inBrackets = false;
-            std::string current;
-            for (size_t c = 0; c < line.size(); ++c) {
-                char ch = line[c];
-                if (ch == '[') {
-                    inBrackets = true;
-                    current.push_back(ch);
-                }
-                else if (ch == ']') {
-                    inBrackets = false;
-                    current.push_back(ch);
-                }
-                else if (!inBrackets && (ch == ' ' || ch == '\t' || ch == ',')) {
-                    if (!current.empty()) {
-                        parts.push_back(current);
-                        current.clear();
-                    }
-                    if (ch == ',') {
-                        parts.push_back(",");
-                    }
-                }
-                else {
-                    current.push_back(ch);
-                }
-            }
-            if (!current.empty()) {
-                parts.push_back(current);
-            }
-        }
-
-        // The first token on the line might be an instruction or unknown
-        bool firstTokenSeen = false;
-        for (auto &p : parts) {
-            trim(p);
-            if (p.empty()) continue;
-
-            if (p == ",") {
-                Token t;
-                t.lexeme = p;
-                t.type = TokenType::Separator;
+                t.lexeme  = lm[1]; // the label text
+                t.type    = TokenType::Label;
+                t.subtype = OperandSubtype::Unknown;
+                t.data    = lm[1];
                 tokens.push_back(t);
                 continue;
             }
-
-            // Instruction candidate if it's the first non-label token
-            if (!firstTokenSeen) {
-                // Possibly an instruction
-                std::smatch m;
-                if (std::regex_match(p, m, instructionDef)) {
-                    // We can cross-check against known instructions from instructions.h if desired
-                    Token t;
-                    t.lexeme = p;
-                    t.type = TokenType::Instruction;
-                    t.data = p;
-                    tokens.push_back(t);
-                    firstTokenSeen = true;
-                    continue;
-                }
-                // If it's not recognized as instruction, treat as operand or unknown
-            }
-
-            // Operand
-            {
-                Token t;
-                t.lexeme = p;
-                t.type = TokenType::Operand;
-                t.data = p;
-                tokens.push_back(t);
-            }
         }
 
-        // End of line token (optional, if desired)
-        // Token eol;
-        // eol.lexeme = "<EOL>";
-        // eol.type = TokenType::EndOfLine;
-        // tokens.push_back(eol);
-    }
+        // Otherwise, gather tokens with tokenRegex
+        std::sregex_iterator iter(expanded.begin(), expanded.end(), tokenRegex);
+        std::sregex_iterator end;
 
+        bool firstTokenOfLine = true;
+        while (iter != end) {
+            // If the first capture group is non‐empty, we got bracketed text
+            // else we get the second capture group.
+            std::string thisToken;
+            if ((*iter)[1].matched) {
+                thisToken = (*iter)[1];
+            } else {
+                thisToken = (*iter)[2];
+            }
+            trim(thisToken);
+
+            if (firstTokenOfLine) {
+                // Check if it looks like an instruction
+                if (std::regex_match(thisToken, instructionDef)) {
+                    // It's an instruction
+                    Token t;
+                    t.lexeme  = thisToken;
+                    t.type    = TokenType::Instruction;
+                    t.subtype = OperandSubtype::Unknown;
+                    t.data    = thisToken;
+                    tokens.push_back(t);
+                    firstTokenOfLine = false;
+                } else {
+                    // Not recognized as instruction, treat as operand (some archs allow that)
+                    Token t;
+                    t.lexeme  = thisToken;
+                    t.type    = TokenType::Operand;
+                    t.subtype = parseOperandSubtype(thisToken);
+                    t.data    = thisToken;
+                    tokens.push_back(t);
+                    firstTokenOfLine = false;
+                }
+            } else {
+                // It's an operand
+                Token t;
+                t.lexeme  = thisToken;
+                t.type    = TokenType::Operand;
+                t.subtype = parseOperandSubtype(thisToken);
+                t.data    = thisToken;
+                tokens.push_back(t);
+            }
+
+            ++iter;
+        }
+    }
     return tokens;
 }
 
@@ -279,8 +318,9 @@ static std::vector<Token> secondPass(const std::vector<std::string>& lines) {
 // Example: main()
 // -----------------------------------------------
 int main() {
-    // Example input lines (could also be read from a file)
-    // For demonstration, we store them directly here.
+    // Example input lines (simulating an .asm file).
+    // Notice we are deliberately using the syntax "$MACRO ADDRESS 0x7000"
+    // so that the firstPass can parse out "ADDRESS" => "0x7000".
     std::vector<std::string> lines = {
         "$MACRO ADDRESS 0x7000",
         "",
@@ -298,13 +338,15 @@ int main() {
         "",
         "mov 3, 4 [2 + #0x455] ; ignore comments, offset address",
         "",
+        "mov [2 + 0xffffff],  7",
+        "",
         "hlt"
     };
 
     // First pass: collect macros and labels
     firstPass(lines);
 
-    // Second pass: produce tokens
+    // Second pass: produce tokens (with macros expanded)
     auto tokens = secondPass(lines);
 
     // Print the resulting tokens
@@ -312,37 +354,58 @@ int main() {
         std::cout << "Lexeme: '" << t.lexeme << "', ";
         switch(t.type) {
             case TokenType::Label:
-                std::cout << "Type: Label";
+                std::cout << "Type: Label, ";
                 break;
             case TokenType::Instruction:
-                std::cout << "Type: Instruction";
+                std::cout << "Type: Instruction, ";
                 break;
             case TokenType::Operand:
-                std::cout << "Type: Operand";
-                break;
-            case TokenType::Separator:
-                std::cout << "Type: Separator";
+                std::cout << "Type: Operand, ";
                 break;
             case TokenType::EndOfLine:
-                std::cout << "Type: EndOfLine";
+                std::cout << "Type: EndOfLine, ";
                 break;
             default:
-                std::cout << "Type: Unknown";
+                std::cout << "Type: Unknown, ";
                 break;
         }
-        std::cout << ", Data: '" << t.data << "'\n";
+
+        if (t.type == TokenType::Operand) {
+            switch(t.subtype) {
+                case OperandSubtype::Register:
+                    std::cout << "OperandSubtype: Register, ";
+                    break;
+                case OperandSubtype::Immediate:
+                    std::cout << "OperandSubtype: Immediate, ";
+                    break;
+                case OperandSubtype::Memory:
+                    std::cout << "OperandSubtype: Memory, ";
+                    break;
+                case OperandSubtype::OffsetMemory:
+                    std::cout << "OperandSubtype: OffsetMemory, ";
+                    break;
+                case OperandSubtype::LabelReference:
+                    std::cout << "OperandSubtype: LabelReference, ";
+                    break;
+                default:
+                    std::cout << "OperandSubtype: Unknown, ";
+                    break;
+            }
+        }
+
+        std::cout << "Data: '" << t.data << "'\n";
     }
 
-    // Example: Print the label table
+    // Print the label table
     std::cout << "\nLabel Table:\n";
     for (auto &lbl : labelTable) {
-        std::cout << lbl.first << " => line " << lbl.second << "\n";
+        std::cout << "  " << lbl.first << " => line " << lbl.second << "\n";
     }
 
-    // Example: Print the macro table
+    // Print the macro table
     std::cout << "\nMacro Table:\n";
     for (auto &m : macroTable) {
-        std::cout << m.first << " => " << m.second << "\n";
+        std::cout << "  " << m.first << " => " << m.second << "\n";
     }
 
     return 0;
