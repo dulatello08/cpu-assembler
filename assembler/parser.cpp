@@ -139,7 +139,7 @@ void Parser::assemble_instruction(const InstructionSpecifier *spec,
             }
             std::vector<uint8_t> operand_bytes2(len2, 0);
             for (int b = 0; b < len2; ++b) {
-                operand_bytes2[b] = (offsetVal >> (8 * b)) & 0xFF;
+                operand_bytes2[b] = (offsetVal >> (8 * (len2 - 1 - b))) & 0xFF;
             }
             for (auto byte: operand_bytes2) {
                 object_code.push_back(byte);
@@ -154,7 +154,7 @@ void Parser::assemble_instruction(const InstructionSpecifier *spec,
                 // Remove '#' and convert immediate value.
                 int value = std::stoi(tok.data.substr(1));
                 for (int b = 0; b < length; ++b) {
-                    operand_bytes[b] = (value >> (8 * b)) & 0xFF;
+                    operand_bytes[b] = (value >> (8 * (length - 1 - b))) & 0xFF;
                 }
             } else if (tok.subtype == OperandSubtype::Register) {
                 std::string reg = tok.data;
@@ -177,7 +177,7 @@ void Parser::assemble_instruction(const InstructionSpecifier *spec,
                     value = std::stoi(content);
                 }
                 for (int b = 0; b < length; ++b) {
-                    operand_bytes[b] = (value >> (8 * b)) & 0xFF;
+                    operand_bytes[b] = (value >> (8 * (length - 1 - b))) & 0xFF;
                 }
             }
 
