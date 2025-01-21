@@ -48,7 +48,7 @@ OperandSubtype Lexer::parseOperandSubtype(const std::string &operandText) {
         if (allDigits) {
             return OperandSubtype::Register;
         }
-        static std::regex regRegex(R"(^(r\d+)$)");
+        static std::regex regRegex(R"(^(?:r)?\d+(?:\.[HL])?$)");
         if (std::regex_match(operandText, regRegex)) {
             return OperandSubtype::Register;
         }

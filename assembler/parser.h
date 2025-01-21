@@ -50,6 +50,12 @@ public:
 
     void parse();
 
+    std::pair<std::string, std::string> parseInstruction();
+
+    static bool match_operands_against_syntax(const std::vector<Token> &operandTokens, const std::string &syntaxStr);
+
+    static bool placeholder_matches_token(const std::string &placeholder, const Token &tok);
+
     [[nodiscard]] const std::vector<uint8_t> &getObjectCode() const {
         return object_code;
     }

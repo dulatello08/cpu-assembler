@@ -4,6 +4,7 @@
 
 #ifndef MAIN_H
 #define MAIN_H
+#include "machine_description.h"
 
 inline time_t get_compile_unix_time() {
     const char *compile_date = __DATE__; // "Mmm dd yyyy"
@@ -26,7 +27,7 @@ uint8_t get_opcode_for_instruction(const char* inst_name);
 const char* get_syntax_for_instruction(const char* inst_name, uint8_t sp);
 
 // Helper to find the InstructionFormat for a given instruction name.
-const InstructionFormat* find_instruction_format(const char* inst_name)
+const InstructionFormat* find_instruction_format(const char* inst_name);
 
 // Retrieve encoding based on instruction name and specifier 'sp'.
 const char* get_encoding_for_instruction(const char* inst_name, uint8_t sp);

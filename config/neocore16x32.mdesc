@@ -18,8 +18,8 @@ specifiers
         encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
         length 4
     sp 02
-        syntax "add %rd, [%operand2]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(32)]
+        syntax "add %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
         length 7
 
 instruction sub
@@ -34,8 +34,8 @@ specifiers
         encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
         length 4
     sp 02
-        syntax "sub %rd, [%operand2]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(32)]
+        syntax "sub %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
         length 7
 
 instruction mul
@@ -50,8 +50,8 @@ specifiers
         encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
         length 4
     sp 02
-        syntax "mul %rd, [%operand2]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(32)]
+        syntax "mul %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
         length 7
 
 instruction and
@@ -66,8 +66,8 @@ specifiers
         encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
         length 4
     sp 02
-        syntax "and %rd, [%operand2]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(32)]
+        syntax "and %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
         length 7
 
 instruction or
@@ -82,8 +82,8 @@ specifiers
         encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
         length 4
     sp 02
-        syntax "or %rd, [%operand2]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(32)]
+        syntax "or %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
         length 7
 
 instruction xor
@@ -98,8 +98,8 @@ specifiers
         encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
         length 4
     sp 02
-        syntax "xor %rd, [%operand2]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(32)]
+        syntax "xor %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
         length 7
 
 instruction lsh
@@ -114,8 +114,8 @@ specifiers
         encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
         length 4
     sp 02
-        syntax "lsh %rd, [%operand2]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(32)]
+        syntax "lsh %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
         length 7
 
 instruction rsh
@@ -130,8 +130,8 @@ specifiers
         encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
         length 4
     sp 02
-        syntax "rsh %rd, [%operand2]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(32)]
+        syntax "rsh %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
         length 7
 
 instruction mov
@@ -178,34 +178,34 @@ specifiers
         encoding [sp(8)] [opcode(8)] [rd(8)] [rn1(8)] [normAddressing(32)]
         length 8
     sp 0A
-        syntax "mov %rd.L, [%rn + #offset]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
+        syntax "mov %rd.L, [%rn + #%offset]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]
         length 8
     sp 0B
-        syntax "mov %rd.H, [%rn + #offset]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
+        syntax "mov %rd.H, [%rn + #%offset]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]
         length 8
     sp 0C
-        syntax "mov %rd, [%rn + #offset]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
+        syntax "mov %rd, [%rn + #%offset]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]
         length 8
     sp 0D
-        syntax "mov %rd, %rd1, [%rn + #offset]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rd1(8)] [rn(8)] [offset(32)]
+        syntax "mov %rd, %rd1, [%rn + #%offset]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rd1(8)] [rn(8)] [%offset(32)]
         length 9
     sp 0E
-        syntax "mov [%rn + #offset], %rd.L"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
+        syntax "mov [%rn + #%offset], %rd.L"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]
         length 8
     sp 0F
-        syntax "mov [%rn + #offset], %rd.H"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
+        syntax "mov [%rn + #%offset], %rd.H"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]
         length 8
     sp 10
-        syntax "mov [%rn + #offset], %rd"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
+        syntax "mov [%rn + #%offset], %rd"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]
         length 8
     sp 11
-        syntax "mov [%rn + #offset], %rd, %rn1"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rn1(8)] [rn(8)] [offset(32)]
+        syntax "mov [%rn + #%offset], %rd, %rn1"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn1(8)] [rn(8)] [%offset(32)]
         length 9

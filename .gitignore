@@ -7,4 +7,5 @@
 **/nc16x32-ld
 **/object_files_parser.o
 **/parser.o
+**/util.o
 *.out
