@@ -102,7 +102,7 @@ static const InstructionFormat instructions[] = {
     {"xor", 0x06, 3, xor_specs},
     {"lsh", 0x07, 3, lsh_specs},
     {"rsh", 0x08, 3, rsh_specs},
-    {"mov", 0x00, 18, mov_specs},
+    {"mov", 0x09, 18, mov_specs},
 };
 
 #endif // INSTRUCTIONS_H

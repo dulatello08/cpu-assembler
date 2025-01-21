@@ -11,6 +11,7 @@
 #include <iostream>
 
 #include "lexer.h"
+#include "machine_description.h"
 
 class Parser {
 public:
@@ -52,7 +53,10 @@ public:
 
     void parse_instruction();
 
-    static bool match_operands_against_syntax(const std::vector<Token> &operandTokens, const std::string &syntaxStr);
+    void assemble_instruction(const InstructionSpecifier *spec, const std::string &inst_name,
+                              const std::vector<Token> &operand_tokens);
+
+    static bool match_operands_against_syntax(const std::vector<Token> &operand_tokens, const std::string &syntax_str);
 
     static bool placeholder_matches_token(const std::string &placeholder, const Token &tok);
 

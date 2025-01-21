@@ -135,7 +135,7 @@ specifiers
         length 7
 
 instruction mov
-opcode 0x00
+opcode 0x09
 specifiers
     sp 00
         syntax "mov %rd, #%immediate"
