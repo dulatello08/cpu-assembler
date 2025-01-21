@@ -5,17 +5,12 @@
 #include <limits>
 #include <algorithm>
 #include "parser.h"
-
-#include <map>
-
 #include "assembler.h"
 #include "machine_description.h"
 #include "sstream"
 
 void Parser::parse() {
     currentTokenIndex = 0;
-    // Vector to store instructions in the order they are encountered
-    std::vector<std::pair<std::string, std::string>> instructionsInOrder;
 
     while (currentTokenIndex < tokens.size()) {
         const Token &t = tokens[currentTokenIndex];
@@ -26,8 +21,7 @@ void Parser::parse() {
         else if (t.type == TokenType::Instruction) {
             try {
                 // Parse the instruction and get the mnemonic and specifier syntax.
-                auto [instName, specSyntax] = parseInstruction();
-                instructionsInOrder.push_back({instName, specSyntax});
+                parse_instruction();
             }
             catch (const std::exception &e) {
                 std::cerr << e.what() << "\n";
@@ -39,23 +33,18 @@ void Parser::parse() {
             currentTokenIndex++;
         }
     }
-
-    // Output instructions in the order they were encountered with their specifiers.
-    for (const auto &inspec : instructionsInOrder) {
-        std::cout << inspec.first << ": " << inspec.second << "\n";
-    }
 }
 
 
-std::pair<std::string, std::string> Parser::parseInstruction()
+void Parser::parse_instruction()
 {
     // 1) Current token => instruction
-    const Token &instToken = tokens[currentTokenIndex];
-    std::string instName = instToken.data; // e.g. "mov", "add", "hlt"
+    const Token &inst_token = tokens[currentTokenIndex];
+    std::string inst_name = inst_token.data; // e.g. "mov", "add", "hlt"
     currentTokenIndex++;
 
     // 2) Gather operand tokens until next instruction or label
-    std::vector<Token> operandTokens;
+    std::vector<Token> operand_tokens;
     while (currentTokenIndex < tokens.size()) {
         const Token &lookahead = tokens[currentTokenIndex];
         if (lookahead.type == TokenType::Instruction ||
@@ -63,14 +52,14 @@ std::pair<std::string, std::string> Parser::parseInstruction()
         {
             break; // next instruction or label => stop collecting
         }
-        operandTokens.push_back(lookahead);
+        operand_tokens.push_back(lookahead);
         currentTokenIndex++;
     }
 
     // 3) Find the instruction format
-    const InstructionFormat* fmt = find_instruction_format(instName.c_str());
+    const InstructionFormat* fmt = find_instruction_format(inst_name.c_str());
     if (!fmt) {
-        throw std::runtime_error("Unknown instruction: " + instName);
+        throw std::runtime_error("Unknown instruction: " + inst_name);
     }
 
     // We'll attempt to match operandTokens against each specifier's syntax.
@@ -79,7 +68,7 @@ std::pair<std::string, std::string> Parser::parseInstruction()
 
     for (size_t i = 0; i < fmt->num_specifiers; ++i) {
         const InstructionSpecifier& spec = fmt->specifiers[i];
-        if (match_operands_against_syntax(operandTokens, spec.syntax)) {
+        if (match_operands_against_syntax(operand_tokens, spec.syntax)) {
             chosenSpec = &spec;
             break;
         }
@@ -88,14 +77,13 @@ std::pair<std::string, std::string> Parser::parseInstruction()
     if (!chosenSpec) {
         // None of the specifiers' syntax matched
         throw std::runtime_error(
-            "No matching syntax for '" + instName + "' with the given operands."
+            "No matching syntax for '" + inst_name + "' with the given operands."
         );
     }
 
     // Now 'chosenSpec' is the specifier that matched
     // ...
-    // (Do whatever you want next, like generating object code, etc.)
-    return {instName, chosenSpec->syntax};
+    // next, extract operands from the tokens and encode the instruction
 }
 
 bool Parser::match_operands_against_syntax(const std::vector<Token> &operandTokens,
@@ -133,7 +121,7 @@ bool Parser::match_operands_against_syntax(const std::vector<Token> &operandToke
         }
     }
 
-    // If the number of syntax operands doesn’t match the number of actual operand tokens, no match
+    // If the number of syntax operands doesn't match the number of actual operand tokens, no match
     if (syntaxOperands.size() != operandTokens.size()) {
         return false;
     }
@@ -201,4 +189,38 @@ bool Parser::placeholder_matches_token(const std::string &placeholder, const Tok
     }
     // If no known placeholder matched, return false
     return false;
+}
+
+std::vector<uint8_t> Parser::get_operand_lengths(const std::string &inst_name, uint8_t sp) {
+    const char* encoding = get_encoding_for_instruction(inst_name.c_str(), sp);
+    std::string enc_str(encoding);
+    std::vector<uint8_t> lengths;
+
+    std::istringstream iss(enc_str);
+    std::string token;
+    while (iss >> token) {
+        // Remove surrounding brackets if present
+        if (!token.empty() && token.front() == '[') token.erase(0, 1);
+        if (!token.empty() && token.back() == ']') token.pop_back();
+
+        // Token should now be in the form fieldName(bitWidth)
+        auto parenOpen = token.find('(');
+        auto parenClose = token.find(')');
+        if (parenOpen == std::string::npos || parenClose == std::string::npos || parenClose < parenOpen) {
+            continue; // skip malformed tokens
+        }
+
+        std::string field_name = token.substr(0, parenOpen);
+        std::string width_str = token.substr(parenOpen + 1, parenClose - parenOpen - 1);
+        auto width = static_cast<uint8_t>(std::stoi(width_str));
+
+        // Skip non-operand fields like 'sp' or 'opcode'
+        if (field_name == "sp" || field_name == "opcode") {
+            continue;
+        }
+
+        lengths.push_back(width);
+    }
+
+    return lengths;
 }

@@ -82,14 +82,14 @@ static const InstructionSpecifier mov_specs[] = {
     {7, "mov [%normAddressing], %rd.H", "[sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]", 7},
     {8, "mov [%normAddressing], %rd", "[sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]", 7},
     {9, "mov [%normAddressing], %rd, %rn1", "[sp(8)] [opcode(8)] [rd(8)] [rn1(8)] [normAddressing(32)]", 8},
-    {10, "mov %rd.L, [%rn + #%offset]", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]", 8},
-    {11, "mov %rd.H, [%rn + #%offset]", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]", 8},
-    {12, "mov %rd, [%rn + #%offset]", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]", 8},
-    {13, "mov %rd, %rd1, [%rn + #%offset]", "[sp(8)] [opcode(8)] [rd(8)] [rd1(8)] [rn(8)] [%offset(32)]", 9},
-    {14, "mov [%rn + #%offset], %rd.L", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]", 8},
-    {15, "mov [%rn + #%offset], %rd.H", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]", 8},
-    {16, "mov [%rn + #%offset], %rd", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]", 8},
-    {17, "mov [%rn + #%offset], %rd, %rn1", "[sp(8)] [opcode(8)] [rd(8)] [rn1(8)] [rn(8)] [%offset(32)]", 9},
+    {10, "mov %rd.L, [%rn + #%offset]", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]", 8},
+    {11, "mov %rd.H, [%rn + #%offset]", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]", 8},
+    {12, "mov %rd, [%rn + #%offset]", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]", 8},
+    {13, "mov %rd, %rd1, [%rn + #%offset]", "[sp(8)] [opcode(8)] [rd(8)] [rd1(8)] [rn(8)] [offset(32)]", 9},
+    {14, "mov [%rn + #%offset], %rd.L", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]", 8},
+    {15, "mov [%rn + #%offset], %rd.H", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]", 8},
+    {16, "mov [%rn + #%offset], %rd", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]", 8},
+    {17, "mov [%rn + #%offset], %rd, %rn1", "[sp(8)] [opcode(8)] [rd(8)] [rn1(8)] [rn(8)] [offset(32)]", 9},
 };
 
 static const InstructionFormat instructions[] = {

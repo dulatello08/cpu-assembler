@@ -179,33 +179,33 @@ specifiers
         length 8
     sp 0A
         syntax "mov %rd.L, [%rn + #%offset]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
         length 8
     sp 0B
         syntax "mov %rd.H, [%rn + #%offset]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
         length 8
     sp 0C
         syntax "mov %rd, [%rn + #%offset]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
         length 8
     sp 0D
         syntax "mov %rd, %rd1, [%rn + #%offset]"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rd1(8)] [rn(8)] [%offset(32)]
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rd1(8)] [rn(8)] [offset(32)]
         length 9
     sp 0E
         syntax "mov [%rn + #%offset], %rd.L"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
         length 8
     sp 0F
         syntax "mov [%rn + #%offset], %rd.H"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
         length 8
     sp 10
         syntax "mov [%rn + #%offset], %rd"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [%offset(32)]
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
         length 8
     sp 11
         syntax "mov [%rn + #%offset], %rd, %rn1"
-        encoding [sp(8)] [opcode(8)] [rd(8)] [rn1(8)] [rn(8)] [%offset(32)]
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn1(8)] [rn(8)] [offset(32)]
         length 9
