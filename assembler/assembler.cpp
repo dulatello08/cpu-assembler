@@ -237,8 +237,7 @@ static std::vector<Token> secondPass(const std::vector<std::string>& lines) {
         }
 
         // Skip macro lines (we parsed them in pass 1)
-        if (rawLine.rfind("$", 0) == 0) {
-            // line starts with "$MACRO" => skip
+        if (!rawLine.empty() && rawLine[0] == '$') {
             continue;
         }
 
