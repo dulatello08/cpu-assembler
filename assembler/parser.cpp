@@ -84,107 +84,177 @@ void Parser::parse_instruction() {
 
 void Parser::assemble_instruction(const InstructionSpecifier *spec,
                                   const std::string &inst_name,
-                                  const std::vector<Token> &operand_tokens) {
-    // Push the specifier first.
+                                  const std::vector<Token> &operand_tokens)
+{
+    //
+    // 1) Write out 'sp' and 'opcode' as before
+    //
     object_code.push_back(static_cast<uint8_t>(spec->sp));
-
-    // Get and push the opcode.
     uint8_t opcode = get_opcode_for_instruction(inst_name.c_str());
     object_code.push_back(opcode);
 
-    // Use the external helper to get operand lengths.
-    std::vector<uint8_t> operand_lengths = get_operand_lengths(inst_name, spec->sp);
-    std::ranges::transform(operand_lengths, operand_lengths.begin(), [](uint8_t len) { return (len + 7) / 8; });
+    //
+    // 2) Build a map from "syntax placeholder" -> "actual Token"
+    //
+    //    e.g. if spec->syntax is "mov %rd, #%immediate"
+    //    and operand_tokens are [Token("%3", Register), Token("#12", Immediate)],
+    //    then placeholderMap["%rd"] = Token("%3", Register)
+    //         placeholderMap["#%immediate"] = Token("#12", Immediate)
+    //
+    auto placeholderMap = build_placeholder_map(spec->syntax, operand_tokens);
 
-    // Use an index to track the position in operand_lengths.
-    size_t length_index = 0;
+    //
+    // 3) Retrieve the (fieldName, bitWidth) pairs in *the order* they appear
+    //    in the machine-encoding definition
+    //
+    auto operandFields = get_operand_lengths(inst_name, spec->sp);
+    // Convert bitWidth to byteWidth in place
+    for (auto &p : operandFields) {
+        p.second = (uint8_t)((p.second + 7) / 8);
+    }
 
-    // Loop through each operand token.
-    for (const auto &tok: operand_tokens) {
-        if (tok.subtype == OperandSubtype::OffsetMemory) {
-            // Consume two lengths for OffsetMemory operands.
-            uint8_t len1 = operand_lengths[length_index++];
-            uint8_t len2 = operand_lengths[length_index++];
+    //
+    // 4) For each field in 'operandFields' (which is in the order from the encoding
+    //    string), find the correct token and encode it.
+    //
+    //    We'll do a small helper function to map fieldName -> placeholderKey.
+    //
+    auto fieldNameToPlaceholder = [&](const std::string &fn) -> std::string {
+        // You could do a more advanced mapping. For example, if
+        //  fieldName == "destReg" then the placeholder might be "%rd" or "rd".
+        //  We'll do a simple approach:
+        //    1) Try an exact match in placeholderMap
+        //    2) If not found, try adding '%' or '#' or removing them
+        //    3) Return whichever is found or empty if none
 
-            // Example data format: "[2 + #8]".
-            // Remove '[' and ']' characters.
+        // 1) If there's an exact match
+        if (placeholderMap.contains(fn)) {
+            return fn;
+        }
+
+        // 2) Try with a '%' if not already
+        {
+            std::string alt = "%" + fn;  // e.g. fieldName "rd" => "%rd"
+            if (placeholderMap.find(alt) != placeholderMap.end()) {
+                return alt;
+            }
+        }
+        // 3) Or a '#' in front if it looks immediate
+        {
+            std::string alt = "#%" + fn; // e.g. "immediate" => "#%immediate"
+            if (placeholderMap.find(alt) != placeholderMap.end()) {
+                return alt;
+            }
+        }
+        // Could add more logic (like searching among placeholderMap keys)...
+
+        // If we fail, return something empty or do a direct pass-through
+        return std::string{};
+    };
+
+    // 5) Encode each field in the exact order from the encoding
+    for (auto &[fieldName, fieldByteWidth] : operandFields)
+    {
+        // (A) Identify which placeholder is responsible for this fieldName
+        std::string placeholder = fieldNameToPlaceholder(fieldName);
+        if (placeholder.empty()) {
+            // If nothing found, handle error or continue
+            std::cerr << "No placeholder found for field '" << fieldName << "'\n";
+            continue;
+        }
+
+        // (B) Retrieve the matching token
+        auto itToken = placeholderMap.find(placeholder);
+        if (itToken == placeholderMap.end()) {
+            // no matching token => error
+            std::cerr << "No token for placeholder '" << placeholder << "'\n";
+            continue;
+        }
+        const Token &tok = itToken->second;
+
+        // (C) Prepare a buffer to encode this field
+        std::vector<uint8_t> fieldBytes(fieldByteWidth, 0);
+
+        // (D) Encode based on token subtype
+        if (tok.subtype == OperandSubtype::Immediate) {
+            // e.g. "#123"
+            int value = std::stoi(tok.data.substr(1)); // remove '#'
+            for (int b = 0; b < (int)fieldByteWidth; ++b) {
+                fieldBytes[b] = (value >> (8 * (fieldByteWidth - 1 - b))) & 0xFF;
+            }
+        }
+        else if (tok.subtype == OperandSubtype::Register) {
+            // e.g. "3", "3.H", "3.L"
+            std::string reg = tok.data;
+            if (auto pos = reg.find(".H"); pos != std::string::npos)
+                reg = reg.substr(0, pos);
+            else if (auto pos = reg.find(".L"); pos != std::string::npos)
+                reg = reg.substr(0, pos);
+
+            int reg_num = std::stoi(reg);
+            fieldBytes[0] = static_cast<uint8_t>(reg_num & 0xFF);
+        }
+        else if (tok.subtype == OperandSubtype::Memory) {
+            // e.g. "[#0xFF]"
+            std::string content = tok.data.substr(1, tok.data.size() - 2); // remove [ ]
+            int memVal = 0;
+            if (!content.empty() && content[0] == '#') {
+                memVal = std::stoi(content.substr(1), nullptr, 0);
+            } else {
+                memVal = std::stoi(content);
+            }
+            for (int b = 0; b < (int)fieldByteWidth; ++b) {
+                fieldBytes[b] = (memVal >> (8 * (fieldByteWidth - 1 - b))) & 0xFF;
+            }
+        }
+        else if (tok.subtype == OperandSubtype::OffsetMemory) {
+            // e.g. "[2 + #8]".
+            // Some architectures put "baseReg" and "offset" in separate fields.
+            // This single token might fill multiple encoding fields.
+            // For *truly* non-sequential usage, you'd likely find separate
+            // fields named "baseReg" and "offset" in operandFields.
+            //
+            // But here we see only "fieldByteWidth" for *one* fieldName.
+            // If your architecture lumps baseReg+offset into *one* field
+            // in the encoding, you can parse and pack them here.
+            //
+            // For demonstration, let's assume the entire "[base + #offset]"
+            // is one field the same size:
             std::string content = tok.data.substr(1, tok.data.size() - 2);
-
-            // Split the content on the '+' character.
             auto plusPos = content.find('+');
-            std::string baseStr = content.substr(0, plusPos);
+            std::string baseStr   = content.substr(0, plusPos);
             std::string offsetStr = content.substr(plusPos + 1);
 
-            // Lambda to trim whitespace.
+            // trim
             auto trim = [](std::string &s) {
-                s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) { return !std::isspace(ch); }));
-                s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) { return !std::isspace(ch); }).base(), s.end());
+                s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+                    [](unsigned char c){ return !std::isspace(c); }));
+                s.erase(std::find_if(s.rbegin(), s.rend(),
+                    [](unsigned char c){ return !std::isspace(c); }).base(), s.end());
             };
             trim(baseStr);
             trim(offsetStr);
 
-            // Process base part.
-            // Assuming base part is a register number without a prefix.
-            int baseReg = std::stoi(baseStr);
-            std::vector<uint8_t> operand_bytes1(len1, 0);
-            operand_bytes1[0] = static_cast<uint8_t>(baseReg & 0xFF);
-            for (auto byte: operand_bytes1) {
-                object_code.push_back(byte);
-            }
-
-            // Process offset immediate part.
+            int baseVal  = std::stoi(baseStr);
             int offsetVal = 0;
             if (!offsetStr.empty() && offsetStr[0] == '#') {
                 offsetVal = std::stoi(offsetStr.substr(1));
             }
-            std::vector<uint8_t> operand_bytes2(len2, 0);
-            for (int b = 0; b < len2; ++b) {
-                operand_bytes2[b] = (offsetVal >> (8 * (len2 - 1 - b))) & 0xFF;
-            }
-            for (auto byte: operand_bytes2) {
-                object_code.push_back(byte);
-            }
-        } else {
-            // For non-OffsetMemory operands, consume one length.
-            uint8_t length = operand_lengths[length_index++];
-
-            std::vector<uint8_t> operand_bytes(length, 0);
-
-            if (tok.subtype == OperandSubtype::Immediate) {
-                // Remove '#' and convert immediate value.
-                int value = std::stoi(tok.data.substr(1));
-                for (int b = 0; b < length; ++b) {
-                    operand_bytes[b] = (value >> (8 * (length - 1 - b))) & 0xFF;
-                }
-            } else if (tok.subtype == OperandSubtype::Register) {
-                std::string reg = tok.data;
-                size_t pos = reg.find(".H");
-                if (pos != std::string::npos) reg = reg.substr(0, pos);
-                pos = reg.find(".L");
-                if (pos != std::string::npos) reg = reg.substr(0, pos);
-
-                // Assuming registers are represented as numeric strings.
-                // For example: "3.H" becomes "3" after trimming.
-                int reg_num = std::stoi(reg);
-                operand_bytes[0] = static_cast<uint8_t>(reg_num & 0xFF);
-            } else if (tok.subtype == OperandSubtype::Memory) {
-                // Process normal memory addressing like "[#0xFF]".
-                std::string content = tok.data.substr(1, tok.data.size() - 2);
-                int value = 0;
-                if (!content.empty() && content[0] == '#') {
-                    value = std::stoi(content.substr(1), nullptr, 0);
-                } else {
-                    value = std::stoi(content);
-                }
-                for (int b = 0; b < length; ++b) {
-                    operand_bytes[b] = (value >> (8 * (length - 1 - b))) & 0xFF;
-                }
-            }
-
-            for (auto byte: operand_bytes) {
-                object_code.push_back(byte);
+            // Combine them however your encoding expects.
+            // For example, if the single field is 16 bits: high 8 bits = baseReg, low 8 bits = offset
+            // This is just an example:
+            uint16_t combined = static_cast<uint16_t>((baseVal & 0xFF) << 8) | (offsetVal & 0xFF);
+            for (int b = 0; b < (int)fieldByteWidth; ++b) {
+                fieldBytes[b] = (combined >> (8 * (fieldByteWidth - 1 - b))) & 0xFF;
             }
         }
+        else {
+            // Unknown subtype, skip or handle error
+            continue;
+        }
+
+        // (E) Append to object code
+        object_code.insert(object_code.end(), fieldBytes.begin(), fieldBytes.end());
     }
 }
 
@@ -287,36 +357,107 @@ bool Parser::placeholder_matches_token(const std::string &placeholder, const Tok
     return false;
 }
 
-std::vector<uint8_t> Parser::get_operand_lengths(const std::string &inst_name, uint8_t sp) {
+std::vector<std::pair<std::string, uint8_t>>
+Parser::get_operand_lengths(const std::string &inst_name, uint8_t sp) {
     const char *encoding = get_encoding_for_instruction(inst_name.c_str(), sp);
-    std::string enc_str(encoding);
-    std::vector<uint8_t> lengths;
+    if (!encoding) {
+        // Handle null or unknown
+        return {};
+    }
 
+    std::string enc_str(encoding);
     std::istringstream iss(enc_str);
     std::string token;
-    while (iss >> token) {
-        // Remove surrounding brackets if present
-        if (!token.empty() && token.front() == '[') token.erase(0, 1);
-        if (!token.empty() && token.back() == ']') token.pop_back();
 
-        // Token should now be in the form fieldName(bitWidth)
-        auto parenOpen = token.find('(');
+    // This will store (fieldName, bitWidth) in the order discovered
+    std::vector<std::pair<std::string, uint8_t>> fields;
+
+    while (iss >> token) {
+        // Strip surrounding brackets if present, e.g. [sp(8)] -> sp(8)
+        if (!token.empty() && token.front() == '[') token.erase(0, 1);
+        if (!token.empty() && token.back() == ']')   token.pop_back();
+
+        // The token should be in the form fieldName(bitWidth)
+        auto parenOpen  = token.find('(');
         auto parenClose = token.find(')');
-        if (parenOpen == std::string::npos || parenClose == std::string::npos || parenClose < parenOpen) {
-            continue; // skip malformed tokens
+        if (parenOpen == std::string::npos || parenClose == std::string::npos ||
+            parenClose < parenOpen)
+        {
+            // Malformed token; skip or throw error
+            continue;
         }
 
         std::string field_name = token.substr(0, parenOpen);
-        std::string width_str = token.substr(parenOpen + 1, parenClose - parenOpen - 1);
-        auto width = static_cast<uint8_t>(std::stoi(width_str));
+        std::string widthStr  = token.substr(parenOpen + 1, parenClose - parenOpen - 1);
+        auto bit_width      = static_cast<uint8_t>(std::stoi(widthStr));
 
-        // Skip non-operand fields like 'sp' or 'opcode'
+        // Skip fields you don't want to treat as operands:
+        // typically "sp", "opcode", or any other meta-fields.
         if (field_name == "sp" || field_name == "opcode") {
             continue;
         }
 
-        lengths.push_back(width);
+        // Push the pair (fieldName, bitWidth) into our vector
+        fields.emplace_back(field_name, bit_width);
     }
 
-    return lengths;
+    return fields;
+}
+std::unordered_map<std::string, Token>
+Parser::build_placeholder_map(const std::string &syntax_str,
+                      const std::vector<Token> &operand_tokens)
+{
+    std::unordered_map<std::string, Token> placeholderMap;
+
+    // 1) Extract just the operand-part of the syntax (ignore the mnemonic)
+    //    e.g. from "mov %rd, #%immediate" => "%rd, #%immediate"
+    auto firstSpace = syntax_str.find(' ');
+    if (firstSpace == std::string::npos) {
+        // Means there's no space => possibly an instruction with no operands
+        // If operand_tokens is empty, we return an empty map.
+        return placeholderMap;
+    }
+    std::string operandPart = syntax_str.substr(firstSpace + 1);
+
+    // 2) Split that operandPart on commas to find individual placeholders
+    //    e.g. "%rd, #%immediate" => ["%rd", "#%immediate"]
+    std::vector<std::string> placeholders;
+    {
+        std::istringstream iss(operandPart);
+        std::string tmp;
+        while (std::getline(iss, tmp, ',')) {
+            // trim whitespace
+            while (!tmp.empty() && std::isspace((unsigned char)tmp.front())) {
+                tmp.erase(tmp.begin());
+            }
+            while (!tmp.empty() && std::isspace((unsigned char)tmp.back())) {
+                tmp.pop_back();
+            }
+            if (!tmp.empty()) {
+                placeholders.push_back(tmp);
+            }
+        }
+    }
+
+    // 3) Basic sanity check: number of placeholders == number of operand_tokens
+    if (placeholders.size() != operand_tokens.size()) {
+        // In a fully robust assembler, you'd handle this mismatch gracefully
+        // or throw an exception. We'll just print an error for demonstration.
+        std::cerr << "Mismatch between placeholder count and operand token count!\n";
+        return placeholderMap;
+    }
+
+    // 4) Assign each placeholder to the corresponding Token in order.
+    //    Because we've already validated the tokens with match_operands_against_syntax(...),
+    //    we know operand_tokens[i] definitely matches placeholders[i].
+    for (size_t i = 0; i < placeholders.size(); i++) {
+        // Optionally, you could do an additional safety check:
+        //    if (!placeholder_matches_token(placeholders[i], operand_tokens[i])) {
+        //        // throw or log error
+        //    }
+
+        placeholderMap[ placeholders[i] ] = operand_tokens[i];
+    }
+
+    return placeholderMap;
 }

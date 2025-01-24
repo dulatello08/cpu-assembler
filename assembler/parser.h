@@ -60,7 +60,10 @@ public:
 
     static bool placeholder_matches_token(const std::string &placeholder, const Token &tok);
 
-    static std::vector<uint8_t> get_operand_lengths(const std::string &inst_name, uint8_t sp);
+    static std::vector<std::pair<std::string, uint8_t>> get_operand_lengths(const std::string &inst_name, uint8_t sp);
+
+    static std::unordered_map<std::string, Token> build_placeholder_map(const std::string &syntax_str,
+                                                                 const std::vector<Token> &operand_tokens);
 
     [[nodiscard]] const std::vector<uint8_t> &getObjectCode() const {
         return object_code;
