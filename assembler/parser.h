@@ -48,7 +48,7 @@ public:
           metadata(std::move(metadata)),
           relocation_entries(std::move(relocation_entries)) {
     }
-
+    std::unordered_map<std::string, std::pair<int,int>> offset_memory_cache;
     void parse();
 
     void parse_instruction();
@@ -64,6 +64,8 @@ public:
 
     static std::unordered_map<std::string, Token> build_placeholder_map(const std::string &syntax_str,
                                                                  const std::vector<Token> &operand_tokens);
+
+    std::pair<int, int> parse_offset_memory_subfields(const std::string &tokenData);
 
     [[nodiscard]] const std::vector<uint8_t> &getObjectCode() const {
         return object_code;

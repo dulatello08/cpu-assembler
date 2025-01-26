@@ -13,11 +13,9 @@ void Parser::parse() {
     currentTokenIndex = 0;
 
     while (currentTokenIndex < tokens.size()) {
-        const Token &t = tokens[currentTokenIndex];
-
-        if (t.type == TokenType::Label) {
+        if (const Token &current_token = tokens[currentTokenIndex]; current_token.type == TokenType::Label) {
             currentTokenIndex++;
-        } else if (t.type == TokenType::Instruction) {
+        } else if (current_token.type == TokenType::Instruction) {
             try {
                 // Parse the instruction and get the mnemonic and specifier syntax.
                 parse_instruction();
@@ -25,13 +23,12 @@ void Parser::parse() {
                 std::cerr << e.what() << "\n";
             }
         } else {
-            std::cerr << "Unexpected token: " << t.data
-                    << " at index " << currentTokenIndex << "\n";
+            std::cerr << "Unexpected token: " << current_token.data
+                      << " at index " << currentTokenIndex << "\n";
             currentTokenIndex++;
         }
     }
 }
-
 
 void Parser::parse_instruction() {
     // 1) Current token => instruction
@@ -45,216 +42,227 @@ void Parser::parse_instruction() {
         const Token &lookahead = tokens[currentTokenIndex];
         if (lookahead.type == TokenType::Instruction ||
             lookahead.type == TokenType::Label) {
-            break; // next instruction or label => stop collecting
+            break;
         }
         operand_tokens.push_back(lookahead);
         currentTokenIndex++;
     }
 
     // 3) Find the instruction format
-    const InstructionFormat *fmt = find_instruction_format(inst_name.c_str());
-    if (!fmt) {
+    const InstructionFormat *instruction_format = find_instruction_format(inst_name.c_str());
+    if (!instruction_format) {
         throw std::runtime_error("Unknown instruction: " + inst_name);
     }
 
-    // We'll attempt to match operandTokens against each specifier's syntax.
-    // For example, a specifier might have syntax = "mov %rd, #%immediate".
-    const InstructionSpecifier *chosenSpec = nullptr;
-
-    for (size_t i = 0; i < fmt->num_specifiers; ++i) {
-        const InstructionSpecifier &spec = fmt->specifiers[i];
+    // Try each specifier until we find one that matches the operand pattern:
+    const InstructionSpecifier *chosen_spec = nullptr;
+    for (size_t i = 0; i < instruction_format->num_specifiers; ++i) {
+        const InstructionSpecifier &spec = instruction_format->specifiers[i];
         if (match_operands_against_syntax(operand_tokens, spec.syntax)) {
-            chosenSpec = &spec;
+            chosen_spec = &spec;
             break;
         }
     }
-
-    if (!chosenSpec) {
-        // None of the specifiers' syntax matched
+    if (!chosen_spec) {
         throw std::runtime_error(
-            "No matching syntax for '" + inst_name + "' with the given operands."
+            "No matching syntax for '" + inst_name + "' with given operands."
         );
     }
 
-    // Now 'chosenSpec' is the specifier that matched
-    // ...
-    // next, extract operands from the tokens and encode the instruction
-    assemble_instruction(chosenSpec, inst_name, operand_tokens);
+    // Finally, assemble:
+    assemble_instruction(chosen_spec, inst_name, operand_tokens);
 }
 
 void Parser::assemble_instruction(const InstructionSpecifier *spec,
-                                  const std::string &inst_name,
-                                  const std::vector<Token> &operand_tokens)
+                                   const std::string &inst_name,
+                                   const std::vector<Token> &operand_tokens)
 {
-    //
-    // 1) Write out 'sp' and 'opcode' as before
-    //
+    // 1) Write out 'sp' and 'opcode'
     object_code.push_back(static_cast<uint8_t>(spec->sp));
     uint8_t opcode = get_opcode_for_instruction(inst_name.c_str());
     object_code.push_back(opcode);
 
-    //
-    // 2) Build a map from "syntax placeholder" -> "actual Token"
-    //
-    //    e.g. if spec->syntax is "mov %rd, #%immediate"
-    //    and operand_tokens are [Token("%3", Register), Token("#12", Immediate)],
-    //    then placeholderMap["%rd"] = Token("%3", Register)
-    //         placeholderMap["#%immediate"] = Token("#12", Immediate)
-    //
-    auto placeholderMap = build_placeholder_map(spec->syntax, operand_tokens);
+    // 2) Build a map from placeholder => token, as always.
+    auto placeholder_map = build_placeholder_map(spec->syntax, operand_tokens);
 
-    //
-    // 3) Retrieve the (fieldName, bitWidth) pairs in *the order* they appear
-    //    in the machine-encoding definition
-    //
-    auto operandFields = get_operand_lengths(inst_name, spec->sp);
-    // Convert bitWidth to byteWidth in place
-    for (auto &p : operandFields) {
-        p.second = (uint8_t)((p.second + 7) / 8);
+    // 3) Get the operand fields from the machine-encoding definition
+    auto operand_fields = get_operand_lengths(inst_name, spec->sp);
+    // convert bits -> bytes
+    for (auto &operand_field_pair : operand_fields) {
+        operand_field_pair.second = static_cast<uint8_t>((operand_field_pair.second + 7) / 8);
     }
 
-    //
-    // 4) For each field in 'operandFields' (which is in the order from the encoding
-    //    string), find the correct token and encode it.
-    //
-    //    We'll do a small helper function to map fieldName -> placeholderKey.
-    //
-    auto fieldNameToPlaceholder = [&](const std::string &fn) -> std::string {
-        // You could do a more advanced mapping. For example, if
-        //  fieldName == "destReg" then the placeholder might be "%rd" or "rd".
-        //  We'll do a simple approach:
-        //    1) Try an exact match in placeholderMap
-        //    2) If not found, try adding '%' or '#' or removing them
-        //    3) Return whichever is found or empty if none
-
-        // 1) If there's an exact match
-        if (placeholderMap.contains(fn)) {
-            return fn;
-        }
-
-        // 2) Try with a '%' if not already
-        {
-            std::string alt = "%" + fn;  // e.g. fieldName "rd" => "%rd"
-            if (placeholderMap.find(alt) != placeholderMap.end()) {
-                return alt;
-            }
-        }
-        // 3) Or a '#' in front if it looks immediate
-        {
-            std::string alt = "#%" + fn; // e.g. "immediate" => "#%immediate"
-            if (placeholderMap.find(alt) != placeholderMap.end()) {
-                return alt;
-            }
-        }
-        // Could add more logic (like searching among placeholderMap keys)...
-
-        // If we fail, return something empty or do a direct pass-through
-        return std::string{};
-    };
-
-    // 5) Encode each field in the exact order from the encoding
-    for (auto &[fieldName, fieldByteWidth] : operandFields)
+    // 4) For each field in the encoding, figure out which token to use
+    for (auto &[field_name, field_byte_width] : operand_fields)
     {
-        // (A) Identify which placeholder is responsible for this fieldName
-        std::string placeholder = fieldNameToPlaceholder(fieldName);
-        if (placeholder.empty()) {
-            // If nothing found, handle error or continue
-            std::cerr << "No placeholder found for field '" << fieldName << "'\n";
-            continue;
+        // We create a buffer of 'field_byte_width' zeros:
+        std::vector<uint8_t> field_bytes(field_byte_width, 0);
+
+        // 4A) Decide which placeholder + subcomponent we need for this field_name.
+        //     "rd", "rn", "immediate", "baseReg", "offset", "normAddressing", etc.
+        //
+        //     For instance, if it's "baseReg" or "offset", we search for the *one* offsetMemory token in placeholder_map.
+        //     If it's "rd", we search for the *one* register placeholder, etc.
+        //
+        // NOTE: This is a minimal example. For a real assembler, you'd do a more robust approach
+        // that accounts for multiple offsetMemory operands, or multiple registers, etc.
+
+        const Token* chosen_token = nullptr;
+        std::string sub_field; // e.g. "baseReg" or "offset"
+
+        // Example 1: "rd" => find a placeholder which is a register
+        if (field_name == "rd" || field_name == "rn") {
+            // Look for a placeholder in placeholder_map whose token.subtype == Register
+            for (auto &key_value : placeholder_map) {
+                if (key_value.second.subtype == OperandSubtype::Register) {
+                    chosen_token = &key_value.second;
+                    break;
+                }
+            }
+            if (!chosen_token) {
+                std::cerr << "No Register operand found for field '" << field_name << "'\n";
+                continue;
+            }
+            // We'll encode that register as normal below.
+
         }
-
-        // (B) Retrieve the matching token
-        auto itToken = placeholderMap.find(placeholder);
-        if (itToken == placeholderMap.end()) {
-            // no matching token => error
-            std::cerr << "No token for placeholder '" << placeholder << "'\n";
-            continue;
-        }
-        const Token &tok = itToken->second;
-
-        // (C) Prepare a buffer to encode this field
-        std::vector<uint8_t> fieldBytes(fieldByteWidth, 0);
-
-        // (D) Encode based on token subtype
-        if (tok.subtype == OperandSubtype::Immediate) {
-            // e.g. "#123"
-            int value = std::stoi(tok.data.substr(1)); // remove '#'
-            for (int b = 0; b < (int)fieldByteWidth; ++b) {
-                fieldBytes[b] = (value >> (8 * (fieldByteWidth - 1 - b))) & 0xFF;
+        // Example 2: "baseReg" => from an OffsetMemory operand
+        else if (field_name == "baseReg") {
+            // Find offsetMemory operand in placeholder_map:
+            for (auto &key_value : placeholder_map) {
+                if (key_value.second.subtype == OperandSubtype::OffsetMemory) {
+                    chosen_token = &key_value.second;
+                    sub_field    = "baseReg";
+                    break;
+                }
+            }
+            if (!chosen_token) {
+                std::cerr << "No offsetMemory operand found for 'baseReg'\n";
+                continue;
             }
         }
-        else if (tok.subtype == OperandSubtype::Register) {
-            // e.g. "3", "3.H", "3.L"
-            std::string reg = tok.data;
-            if (auto pos = reg.find(".H"); pos != std::string::npos)
-                reg = reg.substr(0, pos);
-            else if (auto pos = reg.find(".L"); pos != std::string::npos)
-                reg = reg.substr(0, pos);
-
-            int reg_num = std::stoi(reg);
-            fieldBytes[0] = static_cast<uint8_t>(reg_num & 0xFF);
-        }
-        else if (tok.subtype == OperandSubtype::Memory) {
-            // e.g. "[#0xFF]"
-            std::string content = tok.data.substr(1, tok.data.size() - 2); // remove [ ]
-            int memVal = 0;
-            if (!content.empty() && content[0] == '#') {
-                memVal = std::stoi(content.substr(1), nullptr, 0);
-            } else {
-                memVal = std::stoi(content);
+        // Example 3: "offset" => from that same OffsetMemory token
+        else if (field_name == "offset") {
+            for (auto &key_value : placeholder_map) {
+                if (key_value.second.subtype == OperandSubtype::OffsetMemory) {
+                    chosen_token = &key_value.second;
+                    sub_field    = "offset";
+                    break;
+                }
             }
-            for (int b = 0; b < (int)fieldByteWidth; ++b) {
-                fieldBytes[b] = (memVal >> (8 * (fieldByteWidth - 1 - b))) & 0xFF;
+            if (!chosen_token) {
+                std::cerr << "No offsetMemory operand found for 'offset'\n";
+                continue;
             }
         }
-        else if (tok.subtype == OperandSubtype::OffsetMemory) {
-            // e.g. "[2 + #8]".
-            // Some architectures put "baseReg" and "offset" in separate fields.
-            // This single token might fill multiple encoding fields.
-            // For *truly* non-sequential usage, you'd likely find separate
-            // fields named "baseReg" and "offset" in operandFields.
-            //
-            // But here we see only "fieldByteWidth" for *one* fieldName.
-            // If your architecture lumps baseReg+offset into *one* field
-            // in the encoding, you can parse and pack them here.
-            //
-            // For demonstration, let's assume the entire "[base + #offset]"
-            // is one field the same size:
-            std::string content = tok.data.substr(1, tok.data.size() - 2);
-            auto plusPos = content.find('+');
-            std::string baseStr   = content.substr(0, plusPos);
-            std::string offsetStr = content.substr(plusPos + 1);
-
-            // trim
-            auto trim = [](std::string &s) {
-                s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-                    [](unsigned char c){ return !std::isspace(c); }));
-                s.erase(std::find_if(s.rbegin(), s.rend(),
-                    [](unsigned char c){ return !std::isspace(c); }).base(), s.end());
-            };
-            trim(baseStr);
-            trim(offsetStr);
-
-            int baseVal  = std::stoi(baseStr);
-            int offsetVal = 0;
-            if (!offsetStr.empty() && offsetStr[0] == '#') {
-                offsetVal = std::stoi(offsetStr.substr(1));
+        // Example 4: "immediate"
+        else if (field_name == "immediate" || field_name == "imm" || field_name == "operand2")
+        {
+            // Or whatever your real field names are for immediate...
+            // Find a placeholder that is Immediate
+            for (auto &key_value : placeholder_map) {
+                if (key_value.second.subtype == OperandSubtype::Immediate) {
+                    chosen_token = &key_value.second;
+                    break;
+                }
             }
-            // Combine them however your encoding expects.
-            // For example, if the single field is 16 bits: high 8 bits = baseReg, low 8 bits = offset
-            // This is just an example:
-            uint16_t combined = static_cast<uint16_t>((baseVal & 0xFF) << 8) | (offsetVal & 0xFF);
-            for (int b = 0; b < (int)fieldByteWidth; ++b) {
-                fieldBytes[b] = (combined >> (8 * (fieldByteWidth - 1 - b))) & 0xFF;
+            if (!chosen_token) {
+                std::cerr << "No immediate operand found for '" << field_name << "'\n";
+                continue;
+            }
+        }
+        // Example 5: "normAddressing" => from a Memory operand
+        else if (field_name == "normAddressing") {
+            // find token whose subtype == Memory
+            for (auto &key_value : placeholder_map) {
+                if (key_value.second.subtype == OperandSubtype::Memory) {
+                    chosen_token = &key_value.second;
+                    break;
+                }
+            }
+            if (!chosen_token) {
+                std::cerr << "No Memory operand found for 'normAddressing'\n";
+                continue;
             }
         }
         else {
-            // Unknown subtype, skip or handle error
+            // If your architecture has other field names, handle them similarly.
+            // Or skip. We'll just log a warning:
+            std::cerr << "No placeholder logic for field '" << field_name
+                      << "' => skipping.\n";
             continue;
         }
 
-        // (E) Append to object code
-        object_code.insert(object_code.end(), fieldBytes.begin(), fieldBytes.end());
+        // 4B) Now actually encode that chosen_token into field_bytes.
+        //     If sub_field == "baseReg"/"offset", we parse partial info from the token.
+        //     Otherwise, we encode the entire token as usual.
+        if (!chosen_token) {
+            continue; // we had an error above
+        }
+
+        if (chosen_token->subtype == OperandSubtype::Immediate) {
+            // e.g. token data is "#123"
+            int value = std::stoi(chosen_token->data.substr(1));
+            for (int b = 0; b < static_cast<int>(field_byte_width); ++b) {
+                field_bytes[b] = (value >> (8 * (field_byte_width - 1 - b))) & 0xFF;
+            }
+        }
+        else if (chosen_token->subtype == OperandSubtype::Register) {
+            // e.g. token data is "%3", or "3", or "3.H"
+            std::string reg = chosen_token->data;
+            // remove prefix/suffix:
+            if (!reg.empty() && reg[0] == '%') {
+                reg.erase(0,1);
+            }
+            if (auto pos = reg.find(".H"); pos != std::string::npos) {
+                reg = reg.substr(0, pos);
+            }
+            else if (auto pos = reg.find(".L"); pos != std::string::npos) {
+                reg = reg.substr(0, pos);
+            }
+            int reg_num = std::stoi(reg);
+            // put reg_num in the first byte (or multiple bytes as needed):
+            for (int b = 0; b < static_cast<int>(field_byte_width); ++b) {
+                // Usually this is just 1 byte if reg is small
+                field_bytes[field_byte_width - 1 - b] = (reg_num >> (8 * b)) & 0xFF;
+            }
+        }
+        else if (chosen_token->subtype == OperandSubtype::Memory) {
+            // e.g. "[#0x100]"
+            // remove brackets:
+            std::string inside = chosen_token->data.substr(1, chosen_token->data.size() - 2);
+            // maybe inside is "#0x100"
+            if (!inside.empty() && inside[0] == '#') {
+                inside.erase(0,1); // remove '#'
+            }
+            int mem_val = std::stoi(inside, nullptr, 0);
+            for (int b = 0; b < static_cast<int>(field_byte_width); ++b) {
+                field_bytes[b] = (mem_val >> (8 * (field_byte_width - 1 - b))) & 0xFF;
+            }
+        }
+        else if (chosen_token->subtype == OperandSubtype::OffsetMemory) {
+            // e.g. "[2 + #8]"
+            auto [base_val, offset_val] = parse_offset_memory_subfields(chosen_token->data);
+
+            int value_to_store = 0;
+            if (sub_field == "baseReg") {
+                value_to_store = base_val;
+            }
+            else if (sub_field == "offset") {
+                value_to_store = offset_val;
+            }
+            // place value_to_store into field_bytes:
+            for (int b = 0; b < static_cast<int>(field_byte_width); ++b) {
+                field_bytes[b] = (value_to_store >> (8 * (field_byte_width - 1 - b))) & 0xFF;
+            }
+        }
+        else {
+            std::cerr << "Unknown or unhandled operand subtype for token '"
+                      << chosen_token->data << "'\n";
+        }
+
+        // Finally, append field_bytes to object_code:
+        object_code.insert(object_code.end(), field_bytes.begin(), field_bytes.end());
     }
 }
 
@@ -268,8 +276,8 @@ bool Parser::match_operands_against_syntax(const std::vector<Token> &operand_tok
     //    We'll assume the first token in syntaxStr is always the mnemonic.
     //    So let's isolate the substring after the first space:
 
-    auto firstSpace = syntax_str.find(' ');
-    if (firstSpace == std::string::npos) {
+    auto first_space = syntax_str.find(' ');
+    if (first_space == std::string::npos) {
         // means there's no space => probably no operands
         // so if we have no operand tokens, match is true; else false
         return operand_tokens.empty();
@@ -277,33 +285,33 @@ bool Parser::match_operands_against_syntax(const std::vector<Token> &operand_tok
 
     // substring after the mnemonic
     // e.g. from "mov %rd, #%immediate" => "%rd, #%immediate"
-    std::string operandPart = syntax_str.substr(firstSpace + 1);
+    std::string operand_part = syntax_str.substr(first_space + 1);
 
     // 2) Split that on commas:
-    std::vector<std::string> syntaxOperands; {
-        std::istringstream iss(operandPart);
+    std::vector<std::string> syntax_operands; {
+        std::istringstream iss(operand_part);
         std::string temp;
         while (std::getline(iss, temp, ',')) {
             // trim leading/trailing space
             while (!temp.empty() && isspace(static_cast<unsigned char>(temp.front()))) temp.erase(temp.begin());
             while (!temp.empty() && isspace(static_cast<unsigned char>(temp.back()))) temp.pop_back();
-            syntaxOperands.push_back(temp);
+            syntax_operands.push_back(temp);
         }
     }
 
     // If the number of syntax operands doesn't match the number of actual operand tokens, no match
-    if (syntaxOperands.size() != operand_tokens.size()) {
+    if (syntax_operands.size() != operand_tokens.size()) {
         return false;
     }
 
     // 3) Compare each syntax operand placeholder against the token’s subtype
-    for (size_t i = 0; i < syntaxOperands.size(); i++) {
-        const std::string &placeholder = syntaxOperands[i];
-        const Token &actualToken = operand_tokens[i];
+    for (size_t i = 0; i < syntax_operands.size(); i++) {
+        const std::string &placeholder = syntax_operands[i];
+        const Token &actual_token = operand_tokens[i];
 
         // e.g. placeholder = "%rd", "#%immediate", "[%mem]", ...
         // check if it’s a register placeholder, immediate placeholder, memory, etc.
-        if (!placeholder_matches_token(placeholder, actualToken)) {
+        if (!placeholder_matches_token(placeholder, actual_token)) {
             return false; // mismatch
         }
     }
@@ -312,10 +320,10 @@ bool Parser::match_operands_against_syntax(const std::vector<Token> &operand_tok
     return true;
 }
 
-bool Parser::placeholder_matches_token(const std::string &placeholder, const Token &tok) {
+bool Parser::placeholder_matches_token(const std::string &placeholder, const Token &token) {
     // Handle Offset Memory Addressing
     if (placeholder.find("[%rn + #%offset]") != std::string::npos) {
-        return (tok.subtype == OperandSubtype::OffsetMemory);
+        return (token.subtype == OperandSubtype::OffsetMemory);
     }
     // Handle Register Placeholders
     else if (placeholder.find("%rd") != std::string::npos ||
@@ -323,41 +331,41 @@ bool Parser::placeholder_matches_token(const std::string &placeholder, const Tok
              placeholder.find("%rd1") != std::string::npos ||
              placeholder.find("%rn1") != std::string::npos) {
         // Ensure the token is a Register
-        if (tok.subtype != OperandSubtype::Register) {
+        if (token.subtype != OperandSubtype::Register) {
             return false;
         }
 
         // Check for ".H" or ".L" in the placeholder
-        bool expectsHigh = placeholder.find(".H") != std::string::npos;
-        bool expectsLow = placeholder.find(".L") != std::string::npos;
+        bool expects_high = placeholder.find(".H") != std::string::npos;
+        bool expects_low = placeholder.find(".L") != std::string::npos;
 
         // Check for ".H" or ".L" in the token's data
-        bool hasHigh = tok.data.find(".H") != std::string::npos;
-        bool hasLow = tok.data.find(".L") != std::string::npos;
+        bool has_high = token.data.find(".H") != std::string::npos;
+        bool has_low = token.data.find(".L") != std::string::npos;
 
-        if (expectsHigh) {
-            return hasHigh;
-        } else if (expectsLow) {
-            return hasLow;
+        if (expects_high) {
+            return has_high;
+        } else if (expects_low) {
+            return has_low;
         } else {
             // Placeholder does not specify ".H" or ".L"
             // Ensure token's data does not contain either
-            return !hasHigh && !hasLow;
+            return !has_high && !has_low;
         }
     }
     // Handle Immediate Operands
     else if (placeholder.find("#%immediate") != std::string::npos) {
-        return (tok.subtype == OperandSubtype::Immediate);
+        return (token.subtype == OperandSubtype::Immediate);
     }
     // Handle Normal Memory Addressing
     else if (placeholder.find("[%normAddressing]") != std::string::npos) {
-        return (tok.subtype == OperandSubtype::Memory);
+        return (token.subtype == OperandSubtype::Memory);
     }
     // If no known placeholder matched, return false
     return false;
 }
 
-std::vector<std::pair<std::string, uint8_t>>
+std::vector<std::pair<std::string, uint8_t> >
 Parser::get_operand_lengths(const std::string &inst_name, uint8_t sp) {
     const char *encoding = get_encoding_for_instruction(inst_name.c_str(), sp);
     if (!encoding) {
@@ -367,29 +375,28 @@ Parser::get_operand_lengths(const std::string &inst_name, uint8_t sp) {
 
     std::string enc_str(encoding);
     std::istringstream iss(enc_str);
-    std::string token;
+    std::string token_str;
 
-    // This will store (fieldName, bitWidth) in the order discovered
-    std::vector<std::pair<std::string, uint8_t>> fields;
+    // This will store (field_name, bit_width) in the order discovered
+    std::vector<std::pair<std::string, uint8_t> > fields;
 
-    while (iss >> token) {
+    while (iss >> token_str) {
         // Strip surrounding brackets if present, e.g. [sp(8)] -> sp(8)
-        if (!token.empty() && token.front() == '[') token.erase(0, 1);
-        if (!token.empty() && token.back() == ']')   token.pop_back();
+        if (!token_str.empty() && token_str.front() == '[') token_str.erase(0, 1);
+        if (!token_str.empty() && token_str.back() == ']') token_str.pop_back();
 
         // The token should be in the form fieldName(bitWidth)
-        auto parenOpen  = token.find('(');
-        auto parenClose = token.find(')');
-        if (parenOpen == std::string::npos || parenClose == std::string::npos ||
-            parenClose < parenOpen)
-        {
+        auto paren_open = token_str.find('(');
+        auto paren_close = token_str.find(')');
+        if (paren_open == std::string::npos || paren_close == std::string::npos ||
+            paren_close < paren_open) {
             // Malformed token; skip or throw error
             continue;
         }
 
-        std::string field_name = token.substr(0, parenOpen);
-        std::string widthStr  = token.substr(parenOpen + 1, parenClose - parenOpen - 1);
-        auto bit_width      = static_cast<uint8_t>(std::stoi(widthStr));
+        std::string field_name = token_str.substr(0, paren_open);
+        std::string width_str = token_str.substr(paren_open + 1, paren_close - paren_open - 1);
+        auto bit_width = static_cast<uint8_t>(std::stoi(width_str));
 
         // Skip fields you don't want to treat as operands:
         // typically "sp", "opcode", or any other meta-fields.
@@ -397,44 +404,43 @@ Parser::get_operand_lengths(const std::string &inst_name, uint8_t sp) {
             continue;
         }
 
-        // Push the pair (fieldName, bitWidth) into our vector
+        // Push the pair (field_name, bit_width) into our vector
         fields.emplace_back(field_name, bit_width);
     }
 
     return fields;
 }
+
 std::unordered_map<std::string, Token>
 Parser::build_placeholder_map(const std::string &syntax_str,
-                      const std::vector<Token> &operand_tokens)
-{
-    std::unordered_map<std::string, Token> placeholderMap;
+                              const std::vector<Token> &operand_tokens) {
+    std::unordered_map<std::string, Token> placeholder_map;
 
     // 1) Extract just the operand-part of the syntax (ignore the mnemonic)
     //    e.g. from "mov %rd, #%immediate" => "%rd, #%immediate"
-    auto firstSpace = syntax_str.find(' ');
-    if (firstSpace == std::string::npos) {
+    auto first_space = syntax_str.find(' ');
+    if (first_space == std::string::npos) {
         // Means there's no space => possibly an instruction with no operands
         // If operand_tokens is empty, we return an empty map.
-        return placeholderMap;
+        return placeholder_map;
     }
-    std::string operandPart = syntax_str.substr(firstSpace + 1);
+    std::string operand_part = syntax_str.substr(first_space + 1);
 
-    // 2) Split that operandPart on commas to find individual placeholders
+    // 2) Split that operand_part on commas to find individual placeholders
     //    e.g. "%rd, #%immediate" => ["%rd", "#%immediate"]
-    std::vector<std::string> placeholders;
-    {
-        std::istringstream iss(operandPart);
-        std::string tmp;
-        while (std::getline(iss, tmp, ',')) {
+    std::vector<std::string> placeholders; {
+        std::istringstream iss(operand_part);
+        std::string tmp_str;
+        while (std::getline(iss, tmp_str, ',')) {
             // trim whitespace
-            while (!tmp.empty() && std::isspace((unsigned char)tmp.front())) {
-                tmp.erase(tmp.begin());
+            while (!tmp_str.empty() && std::isspace((unsigned char) tmp_str.front())) {
+                tmp_str.erase(tmp_str.begin());
             }
-            while (!tmp.empty() && std::isspace((unsigned char)tmp.back())) {
-                tmp.pop_back();
+            while (!tmp_str.empty() && std::isspace((unsigned char) tmp_str.back())) {
+                tmp_str.pop_back();
             }
-            if (!tmp.empty()) {
-                placeholders.push_back(tmp);
+            if (!tmp_str.empty()) {
+                placeholders.push_back(tmp_str);
             }
         }
     }
@@ -444,7 +450,7 @@ Parser::build_placeholder_map(const std::string &syntax_str,
         // In a fully robust assembler, you'd handle this mismatch gracefully
         // or throw an exception. We'll just print an error for demonstration.
         std::cerr << "Mismatch between placeholder count and operand token count!\n";
-        return placeholderMap;
+        return placeholder_map;
     }
 
     // 4) Assign each placeholder to the corresponding Token in order.
@@ -456,8 +462,57 @@ Parser::build_placeholder_map(const std::string &syntax_str,
         //        // throw or log error
         //    }
 
-        placeholderMap[ placeholders[i] ] = operand_tokens[i];
+        placeholder_map[placeholders[i]] = operand_tokens[i];
     }
 
-    return placeholderMap;
+    return placeholder_map;
+}
+
+// Helper: parse something like "[2 + #8]" => (base_reg=2, offset=8)
+std::pair<int,int> Parser::parse_offset_memory_subfields(const std::string &token_data)
+{
+    // If we already parsed this exact token string, use the cache:
+    auto cache_it = offset_memory_cache.find(token_data);
+    if (cache_it != offset_memory_cache.end()) {
+        return cache_it->second;
+    }
+
+    // token_data is e.g. "[2 + #8]" or "[#0x100 + #16]" etc.
+    // Remove outer brackets:
+    std::string content = token_data.substr(1, token_data.size() - 2);
+
+    // Split on '+':
+    auto plus_pos = content.find('+');
+    if (plus_pos == std::string::npos) {
+        throw std::runtime_error("OffsetMemory operand missing '+': " + token_data);
+    }
+    std::string base_str   = content.substr(0, plus_pos);
+    std::string offset_str = content.substr(plus_pos + 1);
+
+    // Trim whitespace:
+    auto trim = [](std::string &s){
+        while(!s.empty() && std::isspace(static_cast<unsigned char>(s.front()))) s.erase(s.begin());
+        while(!s.empty() && std::isspace(static_cast<unsigned char>(s.back())))  s.pop_back();
+    };
+    trim(base_str);
+    trim(offset_str);
+
+    // base_str might be "2" or "3", or possibly "#0x10" if your assembler design allows that.
+    // offset_str might be "#8", "#0x10", etc.
+    int base_val = 0;
+    if (!base_str.empty() && base_str[0] == '#') {
+        base_val = std::stoi(base_str.substr(1), nullptr, 0);
+    } else {
+        base_val = std::stoi(base_str, nullptr, 0);
+    }
+
+    int offset_val = 0;
+    if (!offset_str.empty() && offset_str[0] == '#') {
+        offset_val = std::stoi(offset_str.substr(1), nullptr, 0);
+    } else {
+        offset_val = std::stoi(offset_str, nullptr, 0);
+    }
+
+    offset_memory_cache[token_data] = {base_val, offset_val};
+    return {base_val, offset_val};
 }
