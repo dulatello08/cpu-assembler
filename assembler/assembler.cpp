@@ -5,6 +5,7 @@
 #include <string>
 #include <unistd.h>  // for getopt
 
+#include "code_generator.h"
 #include "parser.h"
 
 void print_hex_dump(const std::vector<uint8_t>& object_file) {
@@ -74,8 +75,8 @@ int main(int argc, char* argv[]) {
     Lexer lexer;
     lexer.firstPass(lines);
     std::vector<Token> tokens = lexer.secondPass(lines);
-
-    auto *parser = new Parser(tokens, Parser::Metadata(), std::vector<Parser::RelocationEntry>());
+    auto *code_generator = new CodeGenerator();
+    auto *parser = new Parser(tokens, Parser::Metadata(), std::vector<Parser::RelocationEntry>(), *code_generator);
     parser->parse();
 
     // Set up output stream
@@ -142,7 +143,7 @@ int main(int argc, char* argv[]) {
     if (outFile.is_open()) {
         outFile.close();
     }
-    print_hex_dump(parser->getObjectCode());
+    print_hex_dump(parser->object_code);
 
     return 0;
 }

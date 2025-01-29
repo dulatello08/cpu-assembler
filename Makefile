@@ -4,7 +4,7 @@ CXXFLAGS = -Wall -Wextra -Wpedantic -std=c++20 -O0 -I. -g
 LDFLAGS =
 
 # Project files
-ASSEMBLER_SOURCES = assembler/assembler.cpp assembler/lexer.cpp assembler/parser.cpp assembler/util.cpp
+ASSEMBLER_SOURCES = assembler/assembler.cpp assembler/lexer.cpp assembler/parser.cpp assembler/util.cpp assembler/code_generator.cpp
 LINKER_SOURCES = linker/linker.cpp linker/object_files_parser.cpp linker/memory_layout.cpp
 ASSEMBLER_OBJECTS = $(ASSEMBLER_SOURCES:.cpp=.o)
 LINKER_OBJECTS = $(LINKER_SOURCES:.cpp=.o)

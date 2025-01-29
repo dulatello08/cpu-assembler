@@ -9,10 +9,9 @@
 #include <cstdint>
 #include <string>
 #include <iostream>
-
 #include "lexer.h"
-#include "machine_description.h"
 
+class CodeGenerator;
 class Parser {
 public:
     struct Metadata {
@@ -35,41 +34,28 @@ private:
     size_t currentTokenIndex = 0;
     std::vector<Token> tokens;
     Metadata metadata;
-    std::vector<uint8_t> object_code; // The resultant object code in big endian format
     void addObjectCodeByte(uint8_t byte) {
         object_code.push_back(byte);
     }
 
     std::vector<RelocationEntry> relocation_entries;
+    CodeGenerator& code_generator;
 
 public:
-    Parser(const std::vector<Token> &tokens, Metadata metadata, std::vector<RelocationEntry> relocation_entries):
+    Parser(const std::vector<Token> &tokens, Metadata metadata, std::vector<RelocationEntry> relocation_entries, CodeGenerator& code_generator):
           tokens(tokens),
           metadata(std::move(metadata)),
-          relocation_entries(std::move(relocation_entries)) {
+          relocation_entries(std::move(relocation_entries)),
+          code_generator(code_generator) {
     }
-    std::unordered_map<std::string, std::pair<int,int>> offset_memory_cache;
     void parse();
-
     void parse_instruction();
-
-    void assemble_instruction(const InstructionSpecifier *spec, const std::string &inst_name,
-                              const std::vector<Token> &operand_tokens);
 
     static bool match_operands_against_syntax(const std::vector<Token> &operand_tokens, const std::string &syntax_str);
 
-    static bool placeholder_matches_token(const std::string &placeholder, const Token &tok);
+    static bool placeholder_matches_token(const std::string &placeholder, const Token &token);
 
-    static std::vector<std::pair<std::string, uint8_t>> get_operand_lengths(const std::string &inst_name, uint8_t sp);
-
-    static std::unordered_map<std::string, Token> build_placeholder_map(const std::string &syntax_str,
-                                                                 const std::vector<Token> &operand_tokens);
-
-    std::pair<int, int> parse_offset_memory_subfields(const std::string &tokenData);
-
-    [[nodiscard]] const std::vector<uint8_t> &getObjectCode() const {
-        return object_code;
-    }
+    std::vector<uint8_t> object_code; // The resultant object code in big endian format
 };
 
 #endif //CPU_ASSEMBLER_PARSER_H
