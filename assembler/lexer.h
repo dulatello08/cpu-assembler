@@ -6,11 +6,8 @@
 #include <unordered_map>
 #include <regex>
 #include <cctype>
-#include <algorithm>
 
-// -----------------------------------------------
-// Token Types / Operand Subtypes
-// -----------------------------------------------
+// Token types for classification.
 enum class TokenType {
     Label,
     Instruction,
@@ -19,34 +16,55 @@ enum class TokenType {
     Unknown
 };
 
+// Operand subtypes for more detailed classification.
 enum class OperandSubtype {
     Register,
     Immediate,     // e.g., #0x100, #12
-    Memory,        // e.g., [0x100], [#0x455], ...
+    Memory,        // e.g., [0x100], [#0x455], etc.
     OffsetMemory,  // e.g., [reg + #0xNNNN]
     LabelReference,
     Unknown
 };
 
-// -----------------------------------------------
-// Token Structure
-// -----------------------------------------------
+// Structure representing a single token.
 struct Token {
-    std::string lexeme;      // Exact text (including brackets, etc.)
-    TokenType type;          // High-level type
-    OperandSubtype subtype;  // For operands, a more specific classification
-    std::string data;        // e.g., "0x7000", "1", "_start"
+    std::string lexeme;      // The raw text.
+    TokenType type;          // General token type.
+    OperandSubtype subtype;  // More detailed classification.
+    std::string data;        // Numeric value, label name, etc.
 };
 
-// -----------------------------------------------
-// Lexer Class Definition
-// -----------------------------------------------
 class Lexer {
-private:
-    std::unordered_map<std::string, std::string> macroTable;
-    std::unordered_map<std::string, size_t> labelTable;
+public:
+    // First pass: collects macros and labels.
+    void firstPass(const std::vector<std::string>& lines);
 
-    // Utility: Trim Whitespace
+    // Second pass: tokenizes the input lines.
+    std::vector<Token> secondPass(const std::vector<std::string>& lines);
+
+    /**
+     * @brief Retrieve the macro table.
+     *
+     * @return A reference to the map storing macros.
+     */
+    const std::unordered_map<std::string, std::string>& getMacroTable() const { return macroTable; }
+
+    /**
+     * @brief Retrieve the label table.
+     *
+     * @return A reference to the map storing label positions.
+     */
+    const std::unordered_map<std::string, size_t>& getLabelTable() const { return labelTable; }
+
+private:
+    std::unordered_map<std::string, std::string> macroTable; // Stores macros.
+    std::unordered_map<std::string, size_t> labelTable;      // Maps labels to line numbers.
+
+    /**
+     * @brief Trim leading and trailing whitespace from a string.
+     *
+     * @param s The string to trim.
+     */
     static inline void trim(std::string &s) {
         s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
             return !std::isspace(ch);
@@ -56,22 +74,21 @@ private:
         }).base(), s.end());
     }
 
-    // Expand Macros in a single line
+    /**
+     * @brief Expand macros in a given line.
+     *
+     * @param line The line to process.
+     * @return The expanded line.
+     */
     std::string expandMacros(const std::string& line);
 
-    // Operand Parsing Logic
+    /**
+     * @brief Determine the operand subtype.
+     *
+     * @param operandText The operand string.
+     * @return The corresponding operand subtype.
+     */
     OperandSubtype parseOperandSubtype(const std::string &operandText);
-
-public:
-    // First Pass: Collect Macros and Labels
-    void firstPass(const std::vector<std::string>& lines);
-
-    // Second Pass: Tokenize
-    std::vector<Token> secondPass(const std::vector<std::string>& lines);
-
-    // Optionally add getters for macroTable and labelTable if needed
-    const std::unordered_map<std::string, std::string>& getMacroTable() const { return macroTable; }
-    const std::unordered_map<std::string, size_t>& getLabelTable() const { return labelTable; }
 };
 
 #endif // LEXER_H

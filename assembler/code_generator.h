@@ -15,56 +15,64 @@
 
 class CodeGenerator {
 public:
-    // Constructor
+    // Constructor.
     CodeGenerator();
 
     /**
-     * @brief Assemble an instruction into object code.
+     * Assemble an instruction into object code.
      *
-     * @param spec Pointer to the InstructionSpecifier defining the instruction format.
-     * @param inst_name The mnemonic name of the instruction (e.g., "mov", "add", "hlt").
-     * @param operand_tokens A vector of Tokens representing the operands.
-     * @param object_code The vector where the
-     *assembled bytes will be appended.
+     * @param spec Pointer to the instruction specifier.
+     * @param inst_name Instruction mnemonic.
+     * @param operand_tokens Tokens for the operands.
+     * @param object_code Vector to which the assembled bytes are appended.
      */
     void assemble_instruction(const InstructionSpecifier* spec,
-                              const std::string& inst_name,
-                              const std::vector<Token>& operand_tokens,
-                              std::vector<uint8_t>& object_code);
+                                const std::string& inst_name,
+                                const std::vector<Token>& operand_tokens,
+                                std::vector<uint8_t>& object_code);
 
     /**
-     * @brief Retrieve the operand field lengths based on the instruction and specificity.
+     * Get operand field lengths for the given instruction.
      *
-     * @param inst_name The mnemonic name of the instruction.
-     * @param sp Specificity value associated with the instruction.
-     * @return A vector of pairs, each containing a field name and its bit width.
+     * @param inst_name Instruction mnemonic.
+     * @param sp Specifier value.
+     * @return Vector of (field name, bit width) pairs.
      */
     static std::vector<std::pair<std::string, uint8_t>> get_operand_lengths(const std::string& inst_name, uint8_t sp);
 
     /**
-     * @brief Build a mapping from operand placeholders to actual tokens.
+     * Build a map from operand placeholders to actual tokens.
      *
-     * @param syntax_str The syntax string defining operand placeholders (e.g., "mov %rd, #%immediate").
-     * @param operand_tokens A vector of Tokens representing the operands.
-     * @return An unordered_map mapping each placeholder string to its corresponding Token.
+     * @param syntax_str The syntax string (e.g., "mov %rd, #%immediate").
+     * @param operand_tokens Tokens representing the operands.
+     * @return Map from placeholder to Token.
      */
     static std::unordered_map<std::string, Token> build_placeholder_map(const std::string& syntax_str,
-                                                                 const std::vector<Token>& operand_tokens);
+                                                                         const std::vector<Token>& operand_tokens);
 
     /**
-     * @brief Parse an offset memory operand to extract base register and offset values.
+     * Parse an offset memory operand like "[2 + #8]".
      *
-     * @param token_data The string representation of the offset memory operand (e.g., "[2 + #8]").
-     * @return A pair where the first element is the base register value and the second is the offset value.
+     * @param token_data The operand string.
+     * @return A pair of integers: (base register, offset).
      */
     std::pair<int, int> parse_offset_memory_subfields(const std::string& token_data);
 
+    /**
+     * Find the token for a given field.
+     *
+     * @param field_name The field name.
+     * @param placeholder_map Map of placeholders to tokens.
+     * @param subFieldOut Output for subfield if needed.
+     * @param regSuffixOut Output for register suffix if needed.
+     * @return Pointer to the matching token, or nullptr if not found.
+     */
     static const Token *find_token_for_field(const std::string &field_name,
-                                             const std::unordered_map<std::string, Token> &placeholder_map,
-                                             std::string &subFieldOut, std::string &regSuffixOut);
+                                              const std::unordered_map<std::string, Token> &placeholder_map,
+                                              std::string &subFieldOut, std::string &regSuffixOut);
 
 private:
-    // Cache to store parsed offset memory operands for efficiency
+    // Cache for offset memory operand parsing.
     std::unordered_map<std::string, std::pair<int, int>> offset_memory_cache;
 };
 
