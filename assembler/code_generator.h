@@ -60,8 +60,8 @@ public:
     std::pair<int, int> parse_offset_memory_subfields(const std::string& token_data);
 
     static const Token *find_token_for_field(const std::string &field_name,
-                                      const std::unordered_map<std::string, Token> &placeholder_map,
-                                      std::string &sub_field_out);
+                                             const std::unordered_map<std::string, Token> &placeholder_map,
+                                             std::string &subFieldOut, std::string &regSuffixOut);
 
 private:
     // Cache to store parsed offset memory operands for efficiency

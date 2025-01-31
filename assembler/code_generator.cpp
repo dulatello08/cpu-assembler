@@ -22,135 +22,172 @@ inline void store_big_endian(std::vector<uint8_t> &dest, uint64_t value) {
         dest[i] = static_cast<uint8_t>((value >> (8*(n - 1 - i))) & 0xFF);
     }
 }
+std::pair<std::string, std::string> split_register_suffix(const std::string &regToken) {
+    auto dotPos = regToken.rfind('.');
+    if (dotPos == std::string::npos) {
+        return {regToken, ""}; // No suffix
+    }
+
+    std::string mainPart = regToken.substr(0, dotPos);
+    std::string suffix = regToken.substr(dotPos + 1);
+
+    // Validate suffix
+    if (suffix != "L" && suffix != "H") {
+        // Invalid suffix; treat entire string as mainPart
+        return {regToken, ""};
+    }
+
+    return {mainPart, suffix};
+}
 // Assemble an instruction into object code
 void CodeGenerator::assemble_instruction(const InstructionSpecifier *spec,
                                          const std::string &inst_name,
                                          const std::vector<Token> &operand_tokens,
-                                         std::vector<uint8_t> &object_code)
-{
-    // 1) Write out 'sp' (sub-opcode/secondary prefix) and 'opcode'
+                                         std::vector<uint8_t> &object_code) {
+    // 1. Write out 'sp' and 'opcode'
     object_code.push_back(static_cast<uint8_t>(spec->sp));
     uint8_t opcode = get_opcode_for_instruction(inst_name.c_str());
     object_code.push_back(opcode);
 
-    // 2) Build the placeholder map (maps something like "%rd" or "[%rn + #%offset]" -> Token)
+    // 2. Build the placeholder map
+    // Assumes that `build_placeholder_map` maps placeholders like "%rd" to tokens like "1.L", "5", etc.
     auto placeholder_map = build_placeholder_map(spec->syntax, operand_tokens);
 
-    // 3) Get the operand fields from the machine encoding
-    //    e.g. for spec->encoding == "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]"
-    //    we might get vector of: {("rd",8), ("rn",8), ("offset",32)}
+    // 3. Get operand fields from machine encoding
     auto operand_fields = get_operand_lengths(inst_name, spec->sp);
 
-    // Convert from bits to bytes
+    // Convert bit widths to byte widths
     for (auto &field : operand_fields) {
         field.second = static_cast<uint8_t>((field.second + 7) / 8);
     }
 
-    // 4) For each field in the encoding (in order), fill the bytes accordingly
-    for (auto &[field_name, field_byte_width] : operand_fields)
-    {
-        // We skip sp/opcode if they appear in the encoding string, but typically we also
-        // filtered them out in get_operand_lengths(). Just in case:
+    // 4. Iterate over each operand field and encode accordingly
+    for (const auto &[field_name, field_byte_width] : operand_fields) {
         if (field_name == "sp" || field_name == "opcode") {
-            // Already handled at the start
-            continue;
+            continue; // Already handled
         }
 
-        // Allocate a zeroed buffer for that field
+        // Initialize field bytes to zero
         std::vector<uint8_t> field_bytes(field_byte_width, 0);
 
-        // We figure out which token and subfield we need:
+        // Determine which token corresponds to this field
         std::string sub_field;
-        const Token *chosen_token = find_token_for_field(field_name, placeholder_map, sub_field);
+        std::string reg_suffix;
+        const Token *chosen_token = find_token_for_field(field_name, placeholder_map, sub_field, reg_suffix);
 
         if (!chosen_token) {
-            std::cerr << "ERROR: Couldn't find a matching token for field '"
-                      << field_name << "'\n";
-            // You might want to throw an exception or handle more gracefully
-            continue;
+            std::cerr << "ERROR: No matching token for field '" << field_name << "'\n";
+            continue; // Skip encoding this field
         }
 
-        // Now encode that token into field_bytes
-        switch (chosen_token->subtype)
-        {
-        case OperandSubtype::Immediate: {
-            // e.g. data = "#123" or "#0xFF"
-            // strip the '#' and parse:
-            std::string imm_str = chosen_token->data;
-            if (!imm_str.empty() && imm_str[0] == '#') {
-                imm_str.erase(0, 1); // remove '#'
-            }
-            int value = std::stoi(imm_str, nullptr, 0);
-            for (int b = 0; b < (int)field_byte_width; ++b) {
-                // store big-endian or little-endian? Typically little-endian is usual:
-                field_bytes[b] = (value >> (8*b)) & 0xFF;
-            }
-            break;
-        }
-        case OperandSubtype::Register: {
-            // e.g. data = "%3", "3", "%2.L", etc.
-            // strip leading '%' if present, also remove .L/.H
-            std::string reg_str = chosen_token->data;
-            if (!reg_str.empty() && reg_str[0] == '%') {
-                reg_str.erase(0, 1);
-            }
-            // remove .L or .H if present
-            if (auto pos = reg_str.find(".L"); pos != std::string::npos) {
-                reg_str.erase(pos);
-            } else if (auto pos = reg_str.find(".H"); pos != std::string::npos) {
-                reg_str.erase(pos);
-            }
-            int reg_num = std::stoi(reg_str, nullptr, 0);
-            for (int b = 0; b < (int)field_byte_width; ++b) {
-                field_bytes[b] = (reg_num >> (8*b)) & 0xFF;
-            }
-            break;
-        }
-        case OperandSubtype::Memory: {
-            // e.g. data = "[#0x100]" or "[0x200]"
-            // remove outer brackets:
-            std::string inside = chosen_token->data;
-            if (!inside.empty() && inside.front() == '[') inside.erase(0,1);
-            if (!inside.empty() && inside.back() == ']') inside.pop_back();
-            trim(inside);
-            // Possibly inside is "#0x100" => remove '#'
-            if (!inside.empty() && inside[0] == '#') {
-                inside.erase(0,1);
-            }
-            int mem_val = std::stoi(inside, nullptr, 0);
-            // store in little-endian
-            for (int b = 0; b < (int)field_byte_width; ++b) {
-                field_bytes[b] = (mem_val >> (8*b)) & 0xFF;
-            }
-            break;
-        }
-        case OperandSubtype::OffsetMemory: {
-            // e.g. data = "[2 + #8]" or "[%3 + #0x10]" or "[#0x100 + #16]"
-            auto [base_val, offset_val] = parse_offset_memory_subfields(chosen_token->data);
+        uint64_t value_to_store = 0; // Value to be encoded
 
-            // Decide which subfield we want. If sub_field == "baseReg", we store base_val,
-            // else if sub_field == "offset", we store offset_val.
-            int value_to_store = 0;
-            if (sub_field == "baseReg") {
-                value_to_store = base_val;
+        // Encode based on operand subtype and field specifics
+        switch (chosen_token->subtype) {
+            case OperandSubtype::Immediate: {
+                // Immediate values like "#8"
+                std::string imm_str = chosen_token->data;
+                if (!imm_str.empty() && imm_str[0] == '#') {
+                    imm_str.erase(0, 1); // Remove '#'
+                }
+                try {
+                    value_to_store = std::stoll(imm_str, nullptr, 0);
+                } catch (const std::invalid_argument &) {
+                    std::cerr << "ERROR: Invalid immediate value '" << imm_str << "'\n";
+                    continue;
+                }
+                break;
             }
-            else if (sub_field == "offset") {
-                value_to_store = offset_val;
-            }
-            // else you might want to complain if neither
+            case OperandSubtype::Register: {
+                // Register tokens like "1.L", "5", "3.H"
+                // Split into main part and suffix
+                auto [mainPart, suffix] = split_register_suffix(chosen_token->data);
 
-            for (int b = 0; b < (int)field_byte_width; ++b) {
-                field_bytes[b] = (value_to_store >> (8*b)) & 0xFF;
+                // Parse register number
+                int reg_num = 0;
+                try {
+                    reg_num = std::stoi(mainPart, nullptr, 0);
+                } catch (const std::invalid_argument &) {
+                    std::cerr << "ERROR: Invalid register number '" << mainPart << "'\n";
+                    continue;
+                }
+
+                // Initialize register field with register number (6 bits)
+                uint8_t reg_field = static_cast<uint8_t>(reg_num & 0x3F); // bits 5..0
+
+                // Handle suffix
+                if (!suffix.empty()) {
+                    if (suffix == "H") {
+                        reg_field |= 0x80; // Set bit7
+                    }
+                    else if (suffix == "L") {
+                        reg_field |= 0x40; // Set bit6
+                    }
+                    // Ensure that both bits are not set simultaneously
+                    if ((reg_field & 0xC0) == 0xC0) {
+                        std::cerr << "ERROR: Register '" << chosen_token->data
+                                  << "' cannot have both .L and .H suffixes.\n";
+                        continue;
+                    }
+                }
+
+                value_to_store = reg_field;
+                break;
             }
-            break;
-        }
-        default:
-            std::cerr << "ERROR: Unhandled operand subtype for token '"
-                      << chosen_token->data << "'\n";
-            break;
+            case OperandSubtype::Memory: {
+                // Memory operands like "[5 + #8]" or "[#0x100]"
+                // Extract the address value
+                std::string inside = chosen_token->data;
+                if (!inside.empty() && inside.front() == '[') inside.erase(0, 1);
+                if (!inside.empty() && inside.back() == ']') inside.pop_back();
+                trim(inside);
+
+                // Remove leading '#' if present
+                if (!inside.empty() && inside[0] == '#') {
+                    inside.erase(0, 1);
+                }
+
+                try {
+                    value_to_store = std::stoll(inside, nullptr, 0);
+                } catch (const std::invalid_argument &) {
+                    std::cerr << "ERROR: Invalid memory address '" << inside << "'\n";
+                    continue;
+                }
+                break;
+            }
+            case OperandSubtype::OffsetMemory: {
+                // OffsetMemory operands like "[5 + #8]"
+                auto [base_val, offset_val] = parse_offset_memory_subfields(chosen_token->data);
+
+                if (sub_field == "baseReg") {
+                    // Base register (no suffixes)
+                    if (base_val < 0 || base_val > 63) { // Assuming 6-bit register encoding
+                        std::cerr << "ERROR: Base register number '" << base_val
+                                  << "' out of range (0-63).\n";
+                        continue;
+                    }
+                    value_to_store = static_cast<uint8_t>(base_val & 0x3F); // bits5..0
+                }
+                else if (sub_field == "offset") {
+                    value_to_store = static_cast<uint64_t>(offset_val);
+                }
+                else {
+                    std::cerr << "ERROR: Unknown subfield '" << sub_field
+                              << "' for OffsetMemory.\n";
+                    continue;
+                }
+                break;
+            }
+            default:
+                std::cerr << "ERROR: Unhandled operand subtype for token '"
+                          << chosen_token->data << "'\n";
+                continue;
         }
 
-        // Finally, append these field bytes to the object code
+        // Encode the value into field_bytes in big-endian order
+        store_big_endian(field_bytes, value_to_store);
+
+        // Append the encoded bytes to object_code
         object_code.insert(object_code.end(), field_bytes.begin(), field_bytes.end());
     }
 }
@@ -299,70 +336,77 @@ std::pair<int, int> CodeGenerator::parse_offset_memory_subfields(const std::stri
 }
 const Token* CodeGenerator::find_token_for_field(const std::string &field_name,
                                   const std::unordered_map<std::string, Token> &placeholder_map,
-                                  std::string &sub_field_out)
-{
-    // Reset sub_field_out each time:
-    sub_field_out.clear();
+                                  std::string &subFieldOut,
+                                  std::string &regSuffixOut) {
+    subFieldOut.clear();
+    regSuffixOut.clear();
 
-    // 1) Try direct placeholder name => e.g. field_name "rd" -> placeholder "%rd"
-    //                                     field_name "rd1" -> placeholder "%rd1"
-    //                                     field_name "rn" -> placeholder "%rn"
-    //                                     field_name "rn1" -> placeholder "%rn1"
-    // We do this only if field_name starts with "r".
-    if (field_name == "rd" || field_name == "rn" ||
-        field_name == "rd1" || field_name == "rn1")
-    {
-        // Construct the placeholder key: e.g. "%rd"
-        std::string placeholder_key = "%" + field_name;  // "rd" -> "%rd", "rn1" -> "%rn1", etc.
+    // Determine if the field is a register that can have suffixes
+    bool is_register_field =
+        (field_name == "rd" || field_name == "rd1" ||
+         field_name == "rn" || field_name == "rn1" ||
+         field_name == "rm" || field_name == "rs"); // Extend as needed
 
-        auto it = placeholder_map.find(placeholder_key);
+    if (is_register_field) {
+        // 1. Construct the placeholder key with '%'
+        std::string directKey = "%" + field_name; // e.g., "%rd"
+
+        // 2. Attempt exact match
+        auto it = placeholder_map.find(directKey);
         if (it != placeholder_map.end()) {
-            // Found a direct match. We'll return it:
+            // Found exact match; no suffix
             return &it->second;
         }
 
-        // If not found, it might be part of an offsetMemory token, e.g. "[%rn + #%offset]"
-        // In that case, we want the "baseReg" subfield.
-        // But that means we must see if there's exactly one offsetMemory token in the map:
-        for (auto &kv : placeholder_map) {
+        // 3. Attempt to find a token with suffix (e.g., "%rd.L", "%rd.H")
+        for (const auto &kv : placeholder_map) {
+            const std::string &ph = kv.first; // e.g., "%rd.L"
+            if (ph.find(directKey + ".") == 0) { // Starts with "%rd."
+                auto [mainPart, suffix] = split_register_suffix(ph.substr(1)); // Remove '%'
+                if (mainPart == field_name) {
+                    regSuffixOut = suffix; // "L" or "H"
+                    return &kv.second;
+                }
+            }
+        }
+
+        // 4. If still not found, check if it's part of an OffsetMemory operand
+        for (const auto &kv : placeholder_map) {
             if (kv.second.subtype == OperandSubtype::OffsetMemory) {
-                // We'll assume there's only one offsetMemory placeholder in this instruction
-                // that is supposed to fill "rn" or "rn1".
-                sub_field_out = "baseReg";
+                subFieldOut = "baseReg";
                 return &kv.second;
             }
         }
+
+        // Not found
+        return nullptr;
     }
     else if (field_name == "offset") {
-        // This usually comes from an offsetMemory placeholder
-        for (auto &kv : placeholder_map) {
+        // Offset field from OffsetMemory operand
+        for (const auto &kv : placeholder_map) {
             if (kv.second.subtype == OperandSubtype::OffsetMemory) {
-                sub_field_out = "offset";
+                subFieldOut = "offset";
                 return &kv.second;
             }
         }
-        // Possibly you might fail here if there's no offsetMemory token.
     }
-    else if (field_name == "immediate" ||
-             field_name == "imm" ||
-             field_name == "operand2")
-    {
-        // Look for a placeholder whose subtype == Immediate
-        for (auto &kv : placeholder_map) {
+    else if (field_name == "immediate" || field_name == "imm" || field_name == "operand2") {
+        // Immediate operand
+        for (const auto &kv : placeholder_map) {
             if (kv.second.subtype == OperandSubtype::Immediate) {
                 return &kv.second;
             }
         }
     }
     else if (field_name == "normAddressing") {
-        // Look for a placeholder with subtype == Memory
-        for (auto &kv : placeholder_map) {
+        // Memory operand
+        for (const auto &kv : placeholder_map) {
             if (kv.second.subtype == OperandSubtype::Memory) {
                 return &kv.second;
             }
         }
     }
 
-    // If we get here, we couldn't find anything for field_name
+    // No match found
     return nullptr;
 }
