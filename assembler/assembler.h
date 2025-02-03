@@ -5,6 +5,7 @@
 #ifndef MAIN_H
 #define MAIN_H
 #include "machine_description.h"
+#include <iomanip>
 
 inline time_t get_compile_unix_time() {
     const char *compile_date = __DATE__; // "Mmm dd yyyy"
