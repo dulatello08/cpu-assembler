@@ -2,6 +2,7 @@
 #include <utility>
 #include <bit>
 #include "parser.h"
+#include "code_generator.h"
 
 //
 // Created by Dulat S on 2/13/24.
@@ -9,71 +10,244 @@
 
 #ifndef OBJECT_FILE_GENERATOR_H
 #define OBJECT_FILE_GENERATOR_H
+/*
+ObjectFileGenerator builds an object file in our custom “LF” format (big-endian) without a metadata block.
+The file layout is as follows:
 
+    +-----------------------------+
+    | 1. Header (32 bytes)        |
+    +-----------------------------+
+    | 2. Machine Code Blob        |
+    +-----------------------------+
+    | 3. Label Table Block        |
+    +-----------------------------+
+    | 4. Relocation Table Block   |
+    +-----------------------------+
 
+The header layout (32 bytes):
+  - Bytes 0-3:   Magic ("LF01")
+  - Bytes 4-5:   Version (0x0001)
+  - Bytes 6-7:   Flags (0x0000)
+  - Bytes 8-15:  Timestamp (current time in microseconds)
+  - Bytes 16-19: Machine Code Length
+  - Bytes 20-23: Label Table Offset
+  - Bytes 24-27: Relocation Table Offset
+  - Bytes 28-31: Metadata Offset (set to 0, as no metadata block is generated)
+
+Label strings are stored as a length field (which includes the terminating zero) followed by the
+UTF‑8 characters and a trailing 0x00 byte.
+*/
 class ObjectFileGenerator {
-    Parser::Metadata metadata;
-    std::vector<uint8_t> object_code;
-    std::vector<Parser::RelocationEntry> relocation_table;
-    std::vector<uint8_t> create_object_file_buffer() {
+public:
+    // Constructor accepts the relocation table, label-to-address mapping, and machine code.
+    ObjectFileGenerator(const std::vector<CodeGenerator::RelocationEntry>& relocationEntries,
+                        const std::unordered_map<std::string, uint32_t>& labelTable,
+                        const std::vector<uint8_t>& machineCode)
+        : relocationEntries_(relocationEntries),
+          labelTable_(labelTable),
+          machineCode_(machineCode)
+    {
+    }
+
+    // Builds and returns the complete object file as a vector of bytes.
+    std::vector<uint8_t> build() const {
         std::vector<uint8_t> buffer;
+        // Reserve space for the fixed header (32 bytes).
+        buffer.resize(32, 0);
 
-        // Helper lambda to append data to the buffer
-        auto append_to_buffer = [&buffer](const void* data, size_t size) {
-            const auto* bytes = static_cast<const uint8_t*>(data);
-            buffer.insert(buffer.end(), bytes, bytes + size);
-        };
+        // --- Append the Machine Code Blob ---
+        uint32_t machineCodeOffset = static_cast<uint32_t>(buffer.size());
+        buffer.insert(buffer.end(), machineCode_.begin(), machineCode_.end());
+        uint32_t machineCodeLength = static_cast<uint32_t>(machineCode_.size());
 
-        // Write metadata
-        append_to_buffer(metadata.compiler_version.c_str(), metadata.compiler_version.size() + 1);
-        auto date_of_compilation = static_cast<unsigned long>(metadata.date_of_compilation);
-        auto* date_ptr = reinterpret_cast<unsigned char*>(&date_of_compilation);
+        // --- Build the Label Table Block ---
+        std::vector<uint8_t> labelTableBlock = buildLabelTableBlock();
+        uint32_t labelTableOffset = static_cast<uint32_t>(buffer.size());
+        buffer.insert(buffer.end(), labelTableBlock.begin(), labelTableBlock.end());
 
-        // Convert to big-endian if the system is little-endian
-        if constexpr (std::endian::native == std::endian::little) {
-            std::reverse(date_ptr, date_ptr + sizeof(date_of_compilation));
-        }
+        // --- Build the Relocation Table Block ---
+        std::vector<uint8_t> relocationTableBlock = buildRelocationTableBlock();
+        uint32_t relocationTableOffset = static_cast<uint32_t>(buffer.size());
+        buffer.insert(buffer.end(), relocationTableBlock.begin(), relocationTableBlock.end());
 
-        append_to_buffer(date_ptr, sizeof(date_of_compilation));
-        append_to_buffer(metadata.source_file_name.c_str(), metadata.source_file_name.size() + 1);
+        // --- Now fill in the header fields ---
+        // Header layout (32 bytes):
+        //  0-3:   Magic ("LF01")
+        //  4-5:   Version (0x0001)
+        //  6-7:   Flags (0x0000)
+        //  8-15:  Timestamp (current time in microseconds)
+        // 16-19:  Machine Code Length
+        // 20-23:  Label Table Offset
+        // 24-27:  Relocation Table Offset
+        // 28-31:  Metadata Offset (0, since metadata is not included)
 
-        // Write object code
-        auto object_code_size = static_cast<uint32_t>(object_code.size());
-        append_to_buffer(&object_code_size, sizeof(object_code_size));
-        append_to_buffer(object_code.data(), object_code.size());
-
-        // Write relocation table
-        auto relocation_table_size = static_cast<uint16_t>(relocation_table.size());
-        append_to_buffer(&relocation_table_size, sizeof(relocation_table_size));
-        for (const auto& entry : relocation_table) {
-            append_to_buffer(entry.label.c_str(), entry.label.size() + 1);
-            append_to_buffer(&entry.address, sizeof(entry.address));
-        }
+        // Magic "LF01"
+        writeBytes(buffer, 0, { 'L', 'F', '0', '1' });
+        // Version: 0x0001
+        writeUint16(buffer, 4, 0x0001);
+        // Flags: 0x0000
+        writeUint16(buffer, 6, 0x0000);
+        // Timestamp: use system_clock now in microseconds.
+        uint64_t timestamp = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count());
+        writeUint64(buffer, 8, timestamp);
+        // Machine Code Length.
+        writeUint32(buffer, 16, machineCodeLength);
+        // Label Table Offset.
+        writeUint32(buffer, 20, labelTableOffset);
+        // Relocation Table Offset.
+        writeUint32(buffer, 24, relocationTableOffset);
+        // Metadata Offset (set to 0, since metadata is not included).
+        writeUint32(buffer, 28, 0);
 
         return buffer;
     }
 
-public:
-    ObjectFileGenerator(Parser:: Metadata  metadata, const std::vector<uint8_t>& object_code, const std::vector<Parser::RelocationEntry>& relocation_table)
-        : metadata(std::move(metadata)), object_code(object_code), relocation_table(relocation_table) {}
+private:
+    const std::vector<CodeGenerator::RelocationEntry>& relocationEntries_;
+    const std::unordered_map<std::string, uint32_t>& labelTable_;
+    const std::vector<uint8_t>& machineCode_;
 
-    void generate_object_file(const std::string& file_name) {
-        std::ofstream file(file_name, std::ios::binary | std::ios::out);
-        if (!file.is_open()) {
-            std::cerr << "Failed to open file for writing: " << file_name << std::endl;
-            return;
+    // --- Helper Functions for Writing Data in Big-Endian Format ---
+
+    // Write a list of bytes at the given offset (assumes offset is valid).
+    static void writeBytes(std::vector<uint8_t>& buffer, size_t offset, const std::initializer_list<uint8_t>& bytes) {
+        size_t i = 0;
+        for (auto b : bytes) {
+            if (offset + i < buffer.size())
+                buffer[offset + i] = b;
+            else
+                buffer.push_back(b);
+            ++i;
         }
-
-        std::vector<uint8_t> buffer = create_object_file_buffer();
-        file.write(reinterpret_cast<const char*>(buffer.data()), static_cast<long>(buffer.size()));
-        file.close();
     }
 
-    std::vector<uint8_t> get_object_file() {
-        return create_object_file_buffer();
+    // Write a 16-bit unsigned integer (big-endian) into buffer at offset.
+    static void writeUint16(std::vector<uint8_t>& buffer, size_t offset, uint16_t value) {
+        if (offset + 1 >= buffer.size())
+            throw std::out_of_range("Offset out of range in writeUint16");
+        buffer[offset]   = static_cast<uint8_t>((value >> 8) & 0xFF);
+        buffer[offset+1] = static_cast<uint8_t>(value & 0xFF);
+    }
+
+    // Write a 32-bit unsigned integer (big-endian) into buffer at offset.
+    static void writeUint32(std::vector<uint8_t>& buffer, size_t offset, uint32_t value) {
+        if (offset + 3 >= buffer.size())
+            throw std::out_of_range("Offset out of range in writeUint32");
+        buffer[offset]   = static_cast<uint8_t>((value >> 24) & 0xFF);
+        buffer[offset+1] = static_cast<uint8_t>((value >> 16) & 0xFF);
+        buffer[offset+2] = static_cast<uint8_t>((value >> 8) & 0xFF);
+        buffer[offset+3] = static_cast<uint8_t>(value & 0xFF);
+    }
+
+    // Write a 64-bit unsigned integer (big-endian) into buffer at offset.
+    static void writeUint64(std::vector<uint8_t>& buffer, size_t offset, uint64_t value) {
+        if (offset + 7 >= buffer.size())
+            throw std::out_of_range("Offset out of range in writeUint64");
+        buffer[offset]   = static_cast<uint8_t>((value >> 56) & 0xFF);
+        buffer[offset+1] = static_cast<uint8_t>((value >> 48) & 0xFF);
+        buffer[offset+2] = static_cast<uint8_t>((value >> 40) & 0xFF);
+        buffer[offset+3] = static_cast<uint8_t>((value >> 32) & 0xFF);
+        buffer[offset+4] = static_cast<uint8_t>((value >> 24) & 0xFF);
+        buffer[offset+5] = static_cast<uint8_t>((value >> 16) & 0xFF);
+        buffer[offset+6] = static_cast<uint8_t>((value >> 8) & 0xFF);
+        buffer[offset+7] = static_cast<uint8_t>(value & 0xFF);
+    }
+
+    // --- Build the Label Table Block ---
+    // Label table block layout:
+    //   [Label Count (4 bytes)]
+    //   For each label:
+    //     [Code Offset (4 bytes)] [Name Length (2 bytes)] [Name (bytes including trailing 0x00)]
+    // In this version, strings are stored as zero-terminated.
+    std::vector<uint8_t> buildLabelTableBlock() const {
+        std::vector<uint8_t> block;
+        // Convert unordered_map to a vector of pairs sorted by label name for stable ordering.
+        std::vector<std::pair<std::string, uint32_t>> labels(labelTable_.begin(), labelTable_.end());
+        std::sort(labels.begin(), labels.end(), [](const auto& a, const auto& b) {
+            return a.first < b.first;
+        });
+
+        // Write label count.
+        uint32_t labelCount = static_cast<uint32_t>(labels.size());
+        block.push_back(static_cast<uint8_t>((labelCount >> 24) & 0xFF));
+        block.push_back(static_cast<uint8_t>((labelCount >> 16) & 0xFF));
+        block.push_back(static_cast<uint8_t>((labelCount >> 8) & 0xFF));
+        block.push_back(static_cast<uint8_t>(labelCount & 0xFF));
+
+        // Write each label entry.
+        for (const auto& entry : labels) {
+            // Code offset (4 bytes).
+            uint32_t offset = entry.second;
+            block.push_back(static_cast<uint8_t>((offset >> 24) & 0xFF));
+            block.push_back(static_cast<uint8_t>((offset >> 16) & 0xFF));
+            block.push_back(static_cast<uint8_t>((offset >> 8) & 0xFF));
+            block.push_back(static_cast<uint8_t>(offset & 0xFF));
+
+            // Name with a trailing zero.
+            // The length includes the terminating zero.
+            uint16_t nameLen = static_cast<uint16_t>(entry.first.size() + 1);
+            block.push_back(static_cast<uint8_t>((nameLen >> 8) & 0xFF));
+            block.push_back(static_cast<uint8_t>(nameLen & 0xFF));
+
+            // Insert the string characters.
+            block.insert(block.end(), entry.first.begin(), entry.first.end());
+            // Append the zero terminator.
+            block.push_back(0x00);
+        }
+        return block;
+    }
+
+    // --- Build the Relocation Table Block ---
+    // Relocation table block layout:
+    //   [Relocation Entry Count (4 bytes)]
+    //   For each relocation:
+    //     [Code Offset (4 bytes)] [Reloc Type (1 byte)] [Reserved (1 byte)] [Label Index (2 bytes)]
+    // In this example, we use a default relocation type of 0.
+    // The label index is determined by finding the relocation entry's label in the sorted label table.
+    std::vector<uint8_t> buildRelocationTableBlock() const {
+        std::vector<uint8_t> block;
+        // First, obtain the sorted labels as in the label table.
+        std::vector<std::pair<std::string, uint32_t>> sortedLabels(labelTable_.begin(), labelTable_.end());
+        std::sort(sortedLabels.begin(), sortedLabels.end(), [](const auto& a, const auto& b) {
+            return a.first < b.first;
+        });
+
+        // Write relocation entry count.
+        uint32_t relocCount = static_cast<uint32_t>(relocationEntries_.size());
+        block.push_back(static_cast<uint8_t>((relocCount >> 24) & 0xFF));
+        block.push_back(static_cast<uint8_t>((relocCount >> 16) & 0xFF));
+        block.push_back(static_cast<uint8_t>((relocCount >> 8) & 0xFF));
+        block.push_back(static_cast<uint8_t>(relocCount & 0xFF));
+
+        // Write each relocation entry.
+        for (const auto& reloc : relocationEntries_) {
+            // Code offset (4 bytes).
+            uint32_t codeOffset = reloc.address;
+            block.push_back(static_cast<uint8_t>((codeOffset >> 24) & 0xFF));
+            block.push_back(static_cast<uint8_t>((codeOffset >> 16) & 0xFF));
+            block.push_back(static_cast<uint8_t>((codeOffset >> 8) & 0xFF));
+            block.push_back(static_cast<uint8_t>(codeOffset & 0xFF));
+
+            // Reloc Type (1 byte): default to 0.
+            block.push_back(0x00);
+            // Reserved (1 byte): 0.
+            block.push_back(0x00);
+
+            // Determine label index from sortedLabels.
+            auto it = std::find_if(sortedLabels.begin(), sortedLabels.end(),
+                [&reloc](const std::pair<std::string, uint32_t>& pair) {
+                    return pair.first == reloc.label;
+                });
+            if (it == sortedLabels.end()) {
+                throw std::runtime_error("Relocation entry refers to unknown label: " + reloc.label);
+            }
+            uint16_t labelIndex = static_cast<uint16_t>(std::distance(sortedLabels.begin(), it));
+            block.push_back(static_cast<uint8_t>((labelIndex >> 8) & 0xFF));
+            block.push_back(static_cast<uint8_t>(labelIndex & 0xFF));
+        }
+        return block;
     }
 };
-
-
 
 #endif //OBJECT_FILE_GENERATOR_H
