@@ -29,5 +29,5 @@ build-job:       # This job runs in the build stage, which runs first.
     when: on_success
     expire_in: 30 days  
     paths:
-      - "./nc8x16-as"
-      - "./nc8x16-ld"
+      - "./nc16x32-as"
+      - "./nc16x32-ld"

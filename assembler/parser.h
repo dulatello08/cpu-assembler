@@ -5,14 +5,13 @@
 #ifndef CPU_ASSEMBLER_PARSER_H
 #define CPU_ASSEMBLER_PARSER_H
 
-#include "assembler.h"
-#include <utility>
 #include <vector>
-#include <memory>
 #include <cstdint>
 #include <string>
 #include <iostream>
+#include "lexer.h"
 
+class CodeGenerator;
 class Parser {
 public:
     struct Metadata {
@@ -23,36 +22,40 @@ public:
 
     struct RelocationEntry {
         std::string label;
-        uint16_t address; // Address is relative to 0x0
+        uint32_t address; // Address is relative to 0x0
 
         // Add a constructor that takes two arguments
-        RelocationEntry(std::string label, uint16_t address)
-            : label(std::move(label)), address(address) {}
+        RelocationEntry(std::string label, uint32_t address)
+            : label(std::move(label)), address(address) {
+        }
     };
 
 private:
-    std::vector<Token> tokens;
     size_t currentTokenIndex = 0;
+    std::vector<Token> tokens;
     Metadata metadata;
-    std::vector<uint8_t> object_code; // The resultant object code in big endian format
-    std::vector<uint8_t> conf;
     void addObjectCodeByte(uint8_t byte) {
         object_code.push_back(byte);
     }
+
     std::vector<RelocationEntry> relocation_entries;
+    CodeGenerator& code_generator;
 
 public:
-    Parser(const std::vector<Token>& tokens, Metadata metadata, std::vector<uint8_t> conf, std::vector<RelocationEntry> relocation_entries)
-            : tokens(tokens), metadata(std::move(metadata)), conf(std::move(conf)), relocation_entries(std::move(relocation_entries)){}
-
-    void parse();
-    void processToken(const Token& token);
-
-    [[nodiscard]] const std::vector<uint8_t>& getObjectCode() const {
-        return object_code;
+    Parser(const std::vector<Token> &tokens, Metadata metadata, std::vector<RelocationEntry> relocation_entries, CodeGenerator& code_generator):
+          tokens(tokens),
+          metadata(std::move(metadata)),
+          relocation_entries(std::move(relocation_entries)),
+          code_generator(code_generator) {
     }
+    void parse();
+    void parse_instruction();
 
-    void handleRelocation(const Token &token);
+    static bool match_operands_against_syntax(const std::vector<Token> &operand_tokens, const std::string &syntax_str);
+
+    static bool placeholder_matches_token(const std::string &placeholder, const Token &token);
+
+    std::vector<uint8_t> object_code; // The resultant object code in big endian format
 };
 
 #endif //CPU_ASSEMBLER_PARSER_H

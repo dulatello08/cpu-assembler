@@ -2,84 +2,146 @@
 // Created by gitpod on 2/7/24.
 //
 
-#include <limits>
-#include <algorithm>
 #include "parser.h"
+#include "code_generator.h"
+#include <iostream>
+#include "assembler.h"
+#include <sstream>
 
 void Parser::parse() {
-    for (currentTokenIndex = 0; currentTokenIndex < tokens.size(); ++currentTokenIndex) {
-        // Ensure that you do not access tokens out of bounds
-        if (!tokens.empty()) {
-            processToken(tokens[currentTokenIndex]);
+    currentTokenIndex = 0;
+
+    while (currentTokenIndex < tokens.size()) {
+        const Token& current_token = tokens[currentTokenIndex];
+
+        if (current_token.type == TokenType::Label) {
+            // Skip labels, assuming they're handled elsewhere.
+            currentTokenIndex++;
+        }
+        else if (current_token.type == TokenType::Instruction) {
+            try {
+                parse_instruction();
+            }
+            catch (const std::exception& e) {
+                std::cerr << e.what() << "\n";
+                currentTokenIndex++;
+            }
+        }
+        else {
+            std::cerr << "Unexpected token: " << current_token.data
+                      << " at index " << currentTokenIndex << "\n";
+            currentTokenIndex++;
         }
     }
 }
 
-void Parser::processToken(const Token& token) {
-    // Variable to track the number of operands for the current instruction
-    static uint8_t numOpsRemaining = 0;
+void Parser::parse_instruction() {
+    const Token& inst_token = tokens[currentTokenIndex];
+    std::string inst_name = inst_token.data;
+    currentTokenIndex++;
 
-    if (token.type == TokenType::Instruction) {
-        addObjectCodeByte(getOpCode(token.lexeme, conf));
-        // Reset numOpsRemaining for the new instruction
-        numOpsRemaining = getNumOps(token.lexeme, conf);
-        return; // Return early since the Instruction case has been handled
+    std::vector<Token> operand_tokens;
+    while (currentTokenIndex < tokens.size()) {
+        const Token& lookahead = tokens[currentTokenIndex];
+
+        if (lookahead.type == TokenType::Instruction ||
+            lookahead.type == TokenType::Label) {
+            break;
+        }
+        operand_tokens.push_back(lookahead);
+        currentTokenIndex++;
     }
 
-    if (numOpsRemaining > 0) {
-        switch (token.type) {
-            case TokenType::Register: {
-                uint16_t packedRegisters = token.data << 4; // Assume upper 4 bits for first register
-                // Check if next token is also a register to pack them together
-                if (currentTokenIndex + 1 < tokens.size() && tokens[currentTokenIndex + 1].type == TokenType::Register) {
-                    const auto& nextToken = tokens[++currentTokenIndex]; // Move to next token
-                    packedRegisters |= (nextToken.data & 0xF); // Assume lower 4 bits for second register
-                    // Registers packed together count as one operand
-                }
-                addObjectCodeByte(packedRegisters);
-                numOpsRemaining--; // One operand (or a pair of operands) processed
-                break;
-            }
-            case TokenType::Operand2: {
-                // Check how many bytes to use for Operand2 based on remaining operands
-                if (numOpsRemaining == 1) {
-                    // If only one operand left, use one byte of Operand2
-                    addObjectCodeByte(token.data & 0xFF);
-                } else {
-                    // Otherwise, use both bytes
-                    addObjectCodeByte(token.data >> 8);
-                    addObjectCodeByte(token.data & 0xFF);
-                    numOpsRemaining--; // Decrement again as two bytes (two operands) were processed
-                }
-                numOpsRemaining--; // One operand processed
-                break;
-            }
-            case TokenType::Label:
-                handleRelocation(token);
-                break;
-            case TokenType::Unknown:
-            default:
-                // Handle unknown token type or any other cases not explicitly handled
-                break;
+    const InstructionFormat* instruction_format = find_instruction_format(inst_name.c_str());
+    if (!instruction_format) {
+        throw std::runtime_error("Unknown instruction: " + inst_name);
+    }
+
+    const InstructionSpecifier* chosen_spec = nullptr;
+    for (size_t i = 0; i < instruction_format->num_specifiers; ++i) {
+        const InstructionSpecifier& spec = instruction_format->specifiers[i];
+
+        if (match_operands_against_syntax(operand_tokens, spec.syntax)) {
+            chosen_spec = &spec;
+            break;
+        }
+    }
+    if (!chosen_spec) {
+        throw std::runtime_error(
+            "No matching syntax for '" + inst_name + "' with given operands."
+        );
+    }
+
+    this->code_generator.assemble_instruction(chosen_spec, inst_name, operand_tokens, object_code);
+}
+
+bool Parser::match_operands_against_syntax(const std::vector<Token> &operand_tokens,
+                                           const std::string &syntax_str) {
+    auto first_space = syntax_str.find(' ');
+    if (first_space == std::string::npos) {
+        return operand_tokens.empty();
+    }
+
+    std::string operand_part = syntax_str.substr(first_space + 1);
+    std::vector<std::string> syntax_operands;
+
+    {
+        std::istringstream iss(operand_part);
+        std::string temp;
+        while (std::getline(iss, temp, ',')) {
+            while (!temp.empty() && isspace(static_cast<unsigned char>(temp.front()))) temp.erase(temp.begin());
+            while (!temp.empty() && isspace(static_cast<unsigned char>(temp.back()))) temp.pop_back();
+            syntax_operands.push_back(temp);
         }
     }
 
-    // After processing a non-instruction token, check if there's a need to adjust for packed registers
-    if (numOpsRemaining < 0) {
-        // This condition may occur if registers are packed and treated as one operand
-        // Adjust logic as needed to ensure consistency in operand counting
-        numOpsRemaining = 0;
+    if (syntax_operands.size() != operand_tokens.size()) {
+        return false;
     }
+
+    for (size_t i = 0; i < syntax_operands.size(); i++) {
+        const std::string &placeholder = syntax_operands[i];
+
+        if (const Token &actual_token = operand_tokens[i]; !placeholder_matches_token(placeholder, actual_token)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
-void Parser::handleRelocation(const Token& token) {
-    // Add the sentinel token to indicate a relocation entry
-    addObjectCodeByte(0xEA);
-
-    // Add the token's lexeme to the object code as a null-terminated string
-    for (char c : token.lexeme) {
-        addObjectCodeByte(static_cast<uint8_t>(c));
+bool Parser::placeholder_matches_token(const std::string &placeholder, const Token &token) {
+    if (placeholder.find("[%rn + #%offset]") != std::string::npos) {
+        return (token.subtype == OperandSubtype::OffsetMemory);
     }
-    // Add the null terminator
-    addObjectCodeByte(0x00);
+    else if (placeholder.find("%rd") != std::string::npos ||
+             placeholder.find("%rn") != std::string::npos ||
+             placeholder.find("%rd1") != std::string::npos ||
+             placeholder.find("%rn1") != std::string::npos) {
+        if (token.subtype != OperandSubtype::Register) {
+            return false;
+        }
+
+        bool expects_high = placeholder.find(".H") != std::string::npos;
+        bool expects_low = placeholder.find(".L") != std::string::npos;
+
+        bool has_high = token.data.find(".H") != std::string::npos;
+        bool has_low = token.data.find(".L") != std::string::npos;
+
+        if (expects_high) {
+            return has_high;
+        } else if (expects_low) {
+            return has_low;
+        } else {
+            return !has_high && !has_low;
+        }
+    }
+    else if (placeholder.find("#%immediate") != std::string::npos) {
+        return (token.subtype == OperandSubtype::Immediate);
+    }
+    else if (placeholder.find("[%normAddressing]") != std::string::npos) {
+        return (token.subtype == OperandSubtype::Memory);
+    }
+
+    return false;
 }

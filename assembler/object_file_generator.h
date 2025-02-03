@@ -1,6 +1,7 @@
 #include <algorithm> // For std::reverse
 #include <utility>
 #include <bit>
+#include "parser.h"
 
 //
 // Created by Dulat S on 2/13/24.

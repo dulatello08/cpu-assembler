@@ -1,26 +1,13 @@
-//
-// Created by Dulat S on 2/1/24.
-//
-
-#include <cstdio>      // For printf
-#include <cstdlib>     // For EXIT_FAILURE
-#include <cstring>     // For strcmp
+#include "lexer.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
-#include <getopt.h>
-#include <cstdint>
-#include "lexer.h"
-#include <algorithm>
-#include "parser.h"
-#include "object_file_generator.h"
-#include <iomanip>
-#include <cctype> // For std::isprint
+#include <unistd.h>  // for getopt
 
-bool compareBySecond(const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) {
-    return a.second < b.second;
-}
+#include "code_generator.h"
+#include "parser.h"
+#include "assembler.h"
 
 void print_hex_dump(const std::vector<uint8_t>& object_file) {
     for (size_t i = 0; i < object_file.size(); ++i) {
@@ -49,117 +36,115 @@ void print_hex_dump(const std::vector<uint8_t>& object_file) {
 }
 
 int main(int argc, char* argv[]) {
-    std::string input_filename;
-    std::string conf_filename;
-    std::string output_filename = "program.m";
+    std::string inputFile;
+    std::string outputFile;
 
-    int option;
-    while ((option = getopt(argc, argv, "i:c:o:")) != -1) {
-        switch (option) {
+    int opt;
+    while ((opt = getopt(argc, argv, "i:o:")) != -1) {
+        switch(opt) {
             case 'i':
-                input_filename = optarg;
-                break;
-            case 'c':
-                conf_filename = optarg;
+                inputFile = optarg;
                 break;
             case 'o':
-                output_filename = optarg;
+                outputFile = optarg;
                 break;
             default:
-                std::printf("Usage: assembler -i <input_file> -c <configuration_file> [-o <output_file>]\n");
-                return EXIT_FAILURE;
+                std::cerr << "Usage: " << argv[0] << " -i inputfile -o outputfile\n";
+                return 1;
         }
     }
 
-    if (input_filename.empty() || conf_filename.empty()) {
-        std::printf("Usage: assembler -i <input_file> -c <configuration_file> [-o <output_file>]\n");
-        return EXIT_FAILURE;
+    if (inputFile.empty()) {
+        std::cerr << "Input file required.\n";
+        return 1;
     }
 
-    std::ifstream input_file(input_filename);
-    if (!input_file) {
-        std::printf("Error opening input file\n");
-        return EXIT_FAILURE;
-    }
-
-    std::ifstream configuration_file(conf_filename, std::ifstream::binary);
-    if (!configuration_file) {
-        std::printf("Error opening configuration file\n");
-        return EXIT_FAILURE;
-    }
-
-    // Get the file size
-    configuration_file.seekg(0, std::ios::end);
-    long file_size = configuration_file.tellg();
-    configuration_file.seekg(0, std::ios::beg);
-
-    // Allocate memory for the data
-    std::vector<uint8_t> conf(file_size);
-
-    // Read the data into memory
-    if (!configuration_file.read(reinterpret_cast<char*>(conf.data()), file_size)) {
-        std::printf("Error reading file\n");
-        return EXIT_FAILURE;
-    }
-
-    // Process the input file
+    // Read input file lines
     std::vector<std::string> lines;
+    std::ifstream in(inputFile);
+    if (!in) {
+        std::cerr << "Error opening input file.\n";
+        return 1;
+    }
     std::string line;
-    while (std::getline(input_file, line)) {
+    while (std::getline(in, line)) {
         lines.push_back(line);
     }
+    in.close();
 
-    auto lexer = new Lexer(conf);
-
-    lexer->firstPass(lines);
-
-    for (const auto& label : lexer->labelTable) {
-        std::cout << label.first << label.second << std::endl;
-    }
-
-    lexer->lex(lines);
-
-    for (const auto& token : lexer->tokens) {
-        std::cout << "Token: Type = " << static_cast<int>(token.type) << ", Lexeme = " << token.lexeme << ", Data/Line = " << token.data << std::endl;
-    }
-
-    std::vector<Parser::RelocationEntry> relocation_entries;
-
-
-    relocation_entries.reserve(lexer->labelTable.size());
-    for (const auto& pair : lexer->labelTable) {
-        relocation_entries.emplace_back(pair.first, lexer->lineNumberToAddressMap[pair.second]);
-    }
-
-    // Sort relocation_entries by the address field
-    std::sort(relocation_entries.begin(), relocation_entries.end(),
-              [](const Parser::RelocationEntry& a, const Parser::RelocationEntry& b) {
-                  return a.address < b.address;
-              });
-
-    Parser::Metadata metadata = {
-        "0.1",
-        get_compile_unix_time(),
-        input_filename
-    };
-
-    auto parser = new Parser(lexer->tokens, metadata, conf, relocation_entries);
-
+    // Run lexer passes
+    Lexer lexer;
+    lexer.firstPass(lines);
+    std::vector<Token> tokens = lexer.secondPass(lines);
+    auto *code_generator = new CodeGenerator();
+    auto *parser = new Parser(tokens, Parser::Metadata(), std::vector<Parser::RelocationEntry>(), *code_generator);
     parser->parse();
 
-    // Iterate through the vector and print each element in hex
-    auto object_file_gen = new ObjectFileGenerator(metadata, parser->getObjectCode(), relocation_entries);
-    for (const auto& entry : relocation_entries) {
-        std::cout << "Label: " << entry.label << ", Address: 0x" << std::hex << entry.address << std::dec << std::endl;
+    // Set up output stream
+    std::ostream* outStream = &std::cout;
+    std::ofstream outFile;
+    if (!outputFile.empty()) {
+        outFile.open(outputFile);
+        if (!outFile) {
+            std::cerr << "Error opening output file.\n";
+            return 1;
+        }
+        outStream = &outFile;
     }
-    object_file_gen->generate_object_file(output_filename);
-    std::vector<uint8_t> object_file = object_file_gen->get_object_file();
 
-    print_hex_dump(object_file);
+    // Output tokens
+    for (auto &t : tokens) {
+        *outStream << "Lexeme: '" << t.lexeme << "', ";
+        switch(t.type) {
+            case TokenType::Label:
+                *outStream << "Type: Label, ";
+                break;
+            case TokenType::Instruction:
+                *outStream << "Type: Instruction, ";
+                break;
+            case TokenType::Operand:
+                *outStream << "Type: Operand, ";
+                break;
+            case TokenType::EndOfLine:
+                *outStream << "Type: EndOfLine, ";
+                break;
+            default:
+                *outStream << "Type: Unknown, ";
+                break;
+        }
 
-    delete lexer;
-    delete object_file_gen;
-    // Your processing logic here
+        if (t.type == TokenType::Operand) {
+            switch(t.subtype) {
+                case OperandSubtype::Register:
+                    *outStream << "OperandSubtype: Register, ";
+                    break;
+                case OperandSubtype::Immediate:
+                    *outStream << "OperandSubtype: Immediate, ";
+                    break;
+                case OperandSubtype::Memory:
+                    *outStream << "OperandSubtype: Memory, ";
+                    break;
+                case OperandSubtype::OffsetMemory:
+                    *outStream << "OperandSubtype: OffsetMemory, ";
+                    break;
+                case OperandSubtype::LabelReference:
+                    *outStream << "OperandSubtype: LabelReference, ";
+                    break;
+                default:
+                    *outStream << "OperandSubtype: Unknown, ";
+                    break;
+            }
+        }
+
+        *outStream << "Data: '" << t.data << "'\n";
+    }
+
+
+
+    if (outFile.is_open()) {
+        outFile.close();
+    }
+    print_hex_dump(parser->object_code);
 
     return 0;
 }

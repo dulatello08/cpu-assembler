@@ -4,12 +4,12 @@ CXXFLAGS = -Wall -Wextra -Wpedantic -std=c++20 -O0 -I. -g
 LDFLAGS =
 
 # Project files
-ASSEMBLER_SOURCES = assembler/assembler.cpp assembler/lexer.cpp assembler/parser.cpp
+ASSEMBLER_SOURCES = assembler/assembler.cpp assembler/lexer.cpp assembler/parser.cpp assembler/util.cpp assembler/code_generator.cpp
 LINKER_SOURCES = linker/linker.cpp linker/object_files_parser.cpp linker/memory_layout.cpp
 ASSEMBLER_OBJECTS = $(ASSEMBLER_SOURCES:.cpp=.o)
 LINKER_OBJECTS = $(LINKER_SOURCES:.cpp=.o)
-ASSEMBLER_EXECUTABLE = nc8x16-as
-LINKER_EXECUTABLE = nc8x16-ld
+ASSEMBLER_EXECUTABLE = nc16x32-as
+LINKER_EXECUTABLE = nc16x32-ld
 
 # Target rules
 all: $(ASSEMBLER_EXECUTABLE) $(LINKER_EXECUTABLE)
@@ -20,7 +20,10 @@ $(ASSEMBLER_EXECUTABLE): $(ASSEMBLER_OBJECTS)
 $(LINKER_EXECUTABLE): $(LINKER_OBJECTS)
 	$(CXX) $(LDFLAGS) -o $@ $^
 
-%.o: %.cpp
+assembler/machine_description.h: config/neocore16x32.mdesc parse_md.py
+	./parse_md.py
+
+%.o: %.cpp assembler/machine_description.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:

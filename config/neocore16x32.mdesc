@@ -1,0 +1,211 @@
+instruction nop
+opcode 0x00
+specifiers
+    sp 00
+        syntax "nop"
+        encoding [sp(8)] [opcode(8)]
+        length 2
+
+instruction add
+opcode 0x01
+specifiers
+    sp 00
+        syntax "add %rd, #%immediate"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(16)]
+        length 5
+    sp 01
+        syntax "add %rd, %rn"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
+        length 4
+    sp 02
+        syntax "add %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
+        length 7
+
+instruction sub
+opcode 0x02
+specifiers
+    sp 00
+        syntax "sub %rd, #%immediate"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(16)]
+        length 5
+    sp 01
+        syntax "sub %rd, %rn"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
+        length 4
+    sp 02
+        syntax "sub %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
+        length 7
+
+instruction mul
+opcode 0x03
+specifiers
+    sp 00
+        syntax "mul %rd, #%immediate"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(16)]
+        length 5
+    sp 01
+        syntax "mul %rd, %rn"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
+        length 4
+    sp 02
+        syntax "mul %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
+        length 7
+
+instruction and
+opcode 0x04
+specifiers
+    sp 00
+        syntax "and %rd, #%immediate"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(16)]
+        length 5
+    sp 01
+        syntax "and %rd, %rn"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
+        length 4
+    sp 02
+        syntax "and %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
+        length 7
+
+instruction or
+opcode 0x05
+specifiers
+    sp 00
+        syntax "or %rd, #%immediate"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(16)]
+        length 5
+    sp 01
+        syntax "or %rd, %rn"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
+        length 4
+    sp 02
+        syntax "or %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
+        length 7
+
+instruction xor
+opcode 0x06
+specifiers
+    sp 00
+        syntax "xor %rd, #%immediate"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(16)]
+        length 5
+    sp 01
+        syntax "xor %rd, %rn"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
+        length 4
+    sp 02
+        syntax "xor %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
+        length 7
+
+instruction lsh
+opcode 0x07
+specifiers
+    sp 00
+        syntax "lsh %rd, #%immediate"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(16)]
+        length 5
+    sp 01
+        syntax "lsh %rd, %rn"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
+        length 4
+    sp 02
+        syntax "lsh %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
+        length 7
+
+instruction rsh
+opcode 0x08
+specifiers
+    sp 00
+        syntax "rsh %rd, #%immediate"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [operand2(16)]
+        length 5
+    sp 01
+        syntax "rsh %rd, %rn"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
+        length 4
+    sp 02
+        syntax "rsh %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
+        length 7
+
+instruction mov
+opcode 0x09
+specifiers
+    sp 00
+        syntax "mov %rd, #%immediate"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [immediate(16)]
+        length 5
+    sp 01
+        syntax "mov %rd, %rn"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)]
+        length 4
+    sp 02
+        syntax "mov %rd.L, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
+        length 7
+    sp 03
+        syntax "mov %rd.H, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
+        length 7
+    sp 04
+        syntax "mov %rd, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
+        length 7
+    sp 05
+        syntax "mov %rd, %rn1, [%normAddressing]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn1(8)] [normAddressing(32)]
+        length 8
+    sp 06
+        syntax "mov [%normAddressing], %rd.L"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
+        length 7
+    sp 07
+        syntax "mov [%normAddressing], %rd.H"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
+        length 7
+    sp 08
+        syntax "mov [%normAddressing], %rd"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
+        length 7
+    sp 09
+        syntax "mov [%normAddressing], %rd, %rn1"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn1(8)] [normAddressing(32)]
+        length 8
+    sp 0A
+        syntax "mov %rd.L, [%rn + #%offset]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
+        length 8
+    sp 0B
+        syntax "mov %rd.H, [%rn + #%offset]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
+        length 8
+    sp 0C
+        syntax "mov %rd, [%rn + #%offset]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
+        length 8
+    sp 0D
+        syntax "mov %rd, %rd1, [%rn + #%offset]"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rd1(8)] [rn(8)] [offset(32)]
+        length 9
+    sp 0E
+        syntax "mov [%rn + #%offset], %rd.L"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
+        length 8
+    sp 0F
+        syntax "mov [%rn + #%offset], %rd.H"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
+        length 8
+    sp 10
+        syntax "mov [%rn + #%offset], %rd"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [offset(32)]
+        length 8
+    sp 11
+        syntax "mov [%rn + #%offset], %rd, %rn1"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn1(8)] [rn(8)] [offset(32)]
+        length 9
