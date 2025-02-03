@@ -163,7 +163,7 @@ void CodeGenerator::assemble_instruction(const InstructionSpecifier *spec,
                 // Also note that the relocation entry’s address field is defined as the
                 // location in the object code to be patched.
                 // For example:
-                relocation_entries.emplace_back(chosen_token->data, patch_position);
+                this->relocation_entries.emplace_back(chosen_token->data, patch_position);
                 break;
             }
             default:

@@ -16,6 +16,7 @@ void Parser::parse() {
 
         if (current_token.type == TokenType::Label) {
             // Skip labels, assuming they're handled elsewhere.
+            label_address_table[current_token.data] = object_code.size();
             currentTokenIndex++;
         }
         else if (current_token.type == TokenType::Instruction) {

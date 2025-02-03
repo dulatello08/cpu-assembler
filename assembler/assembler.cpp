@@ -152,6 +152,16 @@ int main(int argc, char* argv[]) {
         outFile.close();
     }
     print_hex_dump(parser->object_code);
+    std::cout << "Relocation Entries:\n";
+    for (const auto& entry : code_generator->relocation_entries) {
+        std::cout << "Label: " << entry.label
+                  << ", Address: 0x" << std::hex << entry.address << std::dec << '\n';
+    }
+    for (const auto &entry : parser->label_address_table) {
+        std::cout << "Label: " << entry.first
+                  << ", Address: 0x" << std::hex << std::setw(8) << std::setfill('0') << entry.second
+                  << std::dec << std::setfill(' ') << "\n";
+    }
     delete parser;
     delete code_generator;
     return 0;

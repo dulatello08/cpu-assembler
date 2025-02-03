@@ -44,6 +44,7 @@ public:
     static bool placeholder_matches_token(const std::string &placeholder, const Token &token);
 
     std::vector<uint8_t> object_code; // The resultant object code in big endian format
+    std::unordered_map<std::string, uint32_t> label_address_table;
 };
 
 #endif //CPU_ASSEMBLER_PARSER_H

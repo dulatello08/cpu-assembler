@@ -21,6 +21,15 @@ public:
     explicit CodeGenerator(std::unordered_map<std::string, uint16_t> label_table):
         label_table(std::move(label_table))
     {};
+    struct RelocationEntry {
+        std::string label;
+        uint32_t address; // Address is relative to 0x0
+
+        // Add a constructor that takes two arguments
+        RelocationEntry(std::string label, uint32_t address)
+            : label(std::move(label)), address(address) {
+        }
+    };
     /**
      * Assemble an instruction into object code.
      *
@@ -74,19 +83,11 @@ public:
                                               const std::unordered_map<std::string, Token> &placeholder_map,
                                               std::string &subFieldOut, std::string &regSuffixOut);
 
+    std::vector<RelocationEntry> relocation_entries;
+
 private:
     // Cache for offset memory operand parsing.
     std::unordered_map<std::string, std::pair<int, int>> offset_memory_cache;
-    struct RelocationEntry {
-        std::string label;
-        uint32_t address; // Address is relative to 0x0
-
-        // Add a constructor that takes two arguments
-        RelocationEntry(std::string label, uint32_t address)
-            : label(std::move(label)), address(address) {
-        }
-    };
-    std::vector<RelocationEntry> relocation_entries;
 };
 
 #endif // CODE_GENERATOR_H
