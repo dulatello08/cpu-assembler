@@ -7,6 +7,7 @@
 
 #include "code_generator.h"
 #include "parser.h"
+#include "assembler.h"
 
 void print_hex_dump(const std::vector<uint8_t>& object_file) {
     for (size_t i = 0; i < object_file.size(); ++i) {
