@@ -209,3 +209,43 @@ specifiers
         syntax "mov [%rn + #%offset], %rd, %rn1"
         encoding [sp(8)] [opcode(8)] [rd(8)] [rn1(8)] [rn(8)] [offset(32)]
         length 9
+
+instruction b
+opcode 0x0A
+specifiers
+    sp 00
+        syntax "b %label"
+        encoding [sp(8)] [opcode(8)] [label(32)]
+        length 6
+
+instruction be
+opcode 0x0B
+specifiers
+    sp 00
+        syntax "be %rd, %rn, %label"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [label(32)]
+        length 8
+
+instruction bne
+opcode 0x0C
+specifiers
+    sp 00
+        syntax "bne %rd, %rn, %label"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [label(32)]
+        length 8
+
+instruction blt
+opcode 0x0D
+specifiers
+    sp 00
+        syntax "blt %rd, %rn, %label"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [label(32)]
+        length 8
+
+instruction bgt
+opcode 0x0E
+specifiers
+    sp 00
+        syntax "bgt %rd, %rn, %label"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [label(32)]
+        length 8

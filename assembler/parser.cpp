@@ -76,7 +76,7 @@ void Parser::parse_instruction() {
 }
 
 bool Parser::match_operands_against_syntax(const std::vector<Token> &operand_tokens,
-                                           const std::string &syntax_str) {
+                                             const std::string &syntax_str) {
     auto first_space = syntax_str.find(' ');
     if (first_space == std::string::npos) {
         return operand_tokens.empty();
@@ -101,8 +101,9 @@ bool Parser::match_operands_against_syntax(const std::vector<Token> &operand_tok
 
     for (size_t i = 0; i < syntax_operands.size(); i++) {
         const std::string &placeholder = syntax_operands[i];
+        const Token &actual_token = operand_tokens[i];
 
-        if (const Token &actual_token = operand_tokens[i]; !placeholder_matches_token(placeholder, actual_token)) {
+        if (!placeholder_matches_token(placeholder, actual_token)) {
             return false;
         }
     }
@@ -141,6 +142,9 @@ bool Parser::placeholder_matches_token(const std::string &placeholder, const Tok
     }
     else if (placeholder.find("[%normAddressing]") != std::string::npos) {
         return (token.subtype == OperandSubtype::Memory);
+    }
+    else if (placeholder.find("%label") != std::string::npos) {
+        return (token.subtype == OperandSubtype::LabelReference);
     }
 
     return false;

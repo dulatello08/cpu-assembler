@@ -76,8 +76,15 @@ int main(int argc, char* argv[]) {
     Lexer lexer;
     lexer.firstPass(lines);
     std::vector<Token> tokens = lexer.secondPass(lines);
-    auto *code_generator = new CodeGenerator();
-    auto *parser = new Parser(tokens, Parser::Metadata(), std::vector<Parser::RelocationEntry>(), *code_generator);
+    std::unordered_map<std::string, uint16_t> label_table;
+
+    for (const auto& pair : lexer.getLabelTable()) {
+        label_table[pair.first] = static_cast<uint16_t>(pair.second);
+    }
+
+    // Correct allocation of CodeGenerator
+    auto *code_generator = new CodeGenerator(label_table);
+    auto *parser = new Parser(tokens, Parser::Metadata(), *code_generator);
     parser->parse();
 
     // Set up output stream
@@ -145,6 +152,7 @@ int main(int argc, char* argv[]) {
         outFile.close();
     }
     print_hex_dump(parser->object_code);
-
+    delete parser;
+    delete code_generator;
     return 0;
 }

@@ -20,16 +20,6 @@ public:
         std::string source_file_name;
     };
 
-    struct RelocationEntry {
-        std::string label;
-        uint32_t address; // Address is relative to 0x0
-
-        // Add a constructor that takes two arguments
-        RelocationEntry(std::string label, uint32_t address)
-            : label(std::move(label)), address(address) {
-        }
-    };
-
 private:
     size_t currentTokenIndex = 0;
     std::vector<Token> tokens;
@@ -38,14 +28,12 @@ private:
         object_code.push_back(byte);
     }
 
-    std::vector<RelocationEntry> relocation_entries;
     CodeGenerator& code_generator;
 
 public:
-    Parser(const std::vector<Token> &tokens, Metadata metadata, std::vector<RelocationEntry> relocation_entries, CodeGenerator& code_generator):
+    Parser(const std::vector<Token> &tokens, Metadata metadata, CodeGenerator& code_generator):
           tokens(tokens),
           metadata(std::move(metadata)),
-          relocation_entries(std::move(relocation_entries)),
           code_generator(code_generator) {
     }
     void parse();

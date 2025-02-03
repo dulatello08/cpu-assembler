@@ -92,6 +92,26 @@ static const InstructionSpecifier mov_specs[] = {
     {17, "mov [%rn + #%offset], %rd, %rn1", "[sp(8)] [opcode(8)] [rd(8)] [rn1(8)] [rn(8)] [offset(32)]", 9},
 };
 
+static const InstructionSpecifier b_specs[] = {
+    {0, "b %label", "[sp(8)] [opcode(8)] [label(32)]", 6},
+};
+
+static const InstructionSpecifier be_specs[] = {
+    {0, "be %rd, %rn, %label", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [label(32)]", 8},
+};
+
+static const InstructionSpecifier bne_specs[] = {
+    {0, "bne %rd, %rn, %label", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [label(32)]", 8},
+};
+
+static const InstructionSpecifier blt_specs[] = {
+    {0, "blt %rd, %rn, %label", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [label(32)]", 8},
+};
+
+static const InstructionSpecifier bgt_specs[] = {
+    {0, "bgt %rd, %rn, %label", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [label(32)]", 8},
+};
+
 static const InstructionFormat instructions[] = {
     {"nop", 0x00, 1, nop_specs},
     {"add", 0x01, 3, add_specs},
@@ -103,6 +123,11 @@ static const InstructionFormat instructions[] = {
     {"lsh", 0x07, 3, lsh_specs},
     {"rsh", 0x08, 3, rsh_specs},
     {"mov", 0x09, 18, mov_specs},
+    {"b", 0x0A, 1, b_specs},
+    {"be", 0x0B, 1, be_specs},
+    {"bne", 0x0C, 1, bne_specs},
+    {"blt", 0x0D, 1, blt_specs},
+    {"bgt", 0x0E, 1, bgt_specs},
 };
 
 #endif // INSTRUCTIONS_H

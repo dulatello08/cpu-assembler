@@ -10,8 +10,6 @@
 #include <unordered_map>
 #include "assembler.h"
 
-CodeGenerator::CodeGenerator() = default;
-
 // Remove extra spaces from a string.
 inline void trim(std::string &s) {
     while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front())))
@@ -149,6 +147,23 @@ void CodeGenerator::assemble_instruction(const InstructionSpecifier *spec,
                               << "' for OffsetMemory.\n";
                     continue;
                 }
+                break;
+            }
+            case OperandSubtype::LabelReference: {
+                // Here we are processing a label reference.
+                // We write a dummy 32-bit placeholder (0) into the object code.
+                // Record a relocation entry so that the linker (or a second pass)
+                // can patch this location with the actual address.
+                // Assume we have access to a relocation_entries vector.
+                // The current position is where these bytes will be inserted.
+                value_to_store = this->label_table[chosen_token->data];
+                auto patch_position = static_cast<uint32_t>(object_code.size());
+                // Note: you may want to strip any extra punctuation from the token,
+                // so that token.data contains just the label name.
+                // Also note that the relocation entry’s address field is defined as the
+                // location in the object code to be patched.
+                // For example:
+                relocation_entries.emplace_back(chosen_token->data, patch_position);
                 break;
             }
             default:
@@ -319,7 +334,7 @@ const Token* CodeGenerator::find_token_for_field(const std::string &field_name,
             }
         }
     }
-    else if (field_name == "immediate" || field_name == "imm" || field_name == "operand2") {
+    else if (field_name == "immediate" || field_name == "operand2") {
         for (const auto &kv : placeholder_map) {
             if (kv.second.subtype == OperandSubtype::Immediate)
                 return &kv.second;
@@ -328,6 +343,12 @@ const Token* CodeGenerator::find_token_for_field(const std::string &field_name,
     else if (field_name == "normAddressing") {
         for (const auto &kv : placeholder_map) {
             if (kv.second.subtype == OperandSubtype::Memory)
+                return &kv.second;
+        }
+    }
+    else if (field_name == "label") {
+        for (const auto &kv : placeholder_map) {
+            if (kv.second.subtype == OperandSubtype::LabelReference)
                 return &kv.second;
         }
     }

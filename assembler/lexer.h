@@ -47,14 +47,14 @@ public:
      *
      * @return A reference to the map storing macros.
      */
-    const std::unordered_map<std::string, std::string>& getMacroTable() const { return macroTable; }
+    [[nodiscard]] const std::unordered_map<std::string, std::string>& getMacroTable() const { return macroTable; }
 
     /**
      * @brief Retrieve the label table.
      *
      * @return A reference to the map storing label positions.
      */
-    const std::unordered_map<std::string, size_t>& getLabelTable() const { return labelTable; }
+    [[nodiscard]] const std::unordered_map<std::string, size_t>& getLabelTable() const { return labelTable; }
 
 private:
     std::unordered_map<std::string, std::string> macroTable; // Stores macros.

@@ -5,19 +5,22 @@
 #ifndef CODE_GENERATOR_H
 #define CODE_GENERATOR_H
 
+#include <utility>
 #include <vector>
 #include <string>
 #include <unordered_map>
 #include <cstdint>
 #include "lexer.h"
-#include "parser.h"
 #include "machine_description.h"
 
 class CodeGenerator {
 public:
     // Constructor.
-    CodeGenerator();
+    std::unordered_map<std::string, uint16_t> label_table;
 
+    explicit CodeGenerator(std::unordered_map<std::string, uint16_t> label_table):
+        label_table(std::move(label_table))
+    {};
     /**
      * Assemble an instruction into object code.
      *
@@ -74,6 +77,16 @@ public:
 private:
     // Cache for offset memory operand parsing.
     std::unordered_map<std::string, std::pair<int, int>> offset_memory_cache;
+    struct RelocationEntry {
+        std::string label;
+        uint32_t address; // Address is relative to 0x0
+
+        // Add a constructor that takes two arguments
+        RelocationEntry(std::string label, uint32_t address)
+            : label(std::move(label)), address(address) {
+        }
+    };
+    std::vector<RelocationEntry> relocation_entries;
 };
 
 #endif // CODE_GENERATOR_H
