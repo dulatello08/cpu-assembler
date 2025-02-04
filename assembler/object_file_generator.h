@@ -1,15 +1,14 @@
+#ifndef OBJECT_FILE_GENERATOR_H
+#define OBJECT_FILE_GENERATOR_H
+
 #include <algorithm> // For std::reverse
-#include <utility>
-#include <bit>
-#include "parser.h"
 #include "code_generator.h"
 
 //
 // Created by Dulat S on 2/13/24.
 //
 
-#ifndef OBJECT_FILE_GENERATOR_H
-#define OBJECT_FILE_GENERATOR_H
+
 /*
 ObjectFileGenerator builds an object file in our custom “LF” format (big-endian) without a metadata block.
 The file layout is as follows:
@@ -50,24 +49,24 @@ public:
     }
 
     // Builds and returns the complete object file as a vector of bytes.
-    std::vector<uint8_t> build() const {
+    [[nodiscard]] std::vector<uint8_t> build() const {
         std::vector<uint8_t> buffer;
         // Reserve space for the fixed header (32 bytes).
         buffer.resize(32, 0);
 
         // --- Append the Machine Code Blob ---
-        uint32_t machineCodeOffset = static_cast<uint32_t>(buffer.size());
+        auto machineCodeOffset = static_cast<uint32_t>(buffer.size());
         buffer.insert(buffer.end(), machineCode_.begin(), machineCode_.end());
-        uint32_t machineCodeLength = static_cast<uint32_t>(machineCode_.size());
+        auto machineCodeLength = static_cast<uint32_t>(machineCode_.size());
 
         // --- Build the Label Table Block ---
         std::vector<uint8_t> labelTableBlock = buildLabelTableBlock();
-        uint32_t labelTableOffset = static_cast<uint32_t>(buffer.size());
+        auto labelTableOffset = static_cast<uint32_t>(buffer.size());
         buffer.insert(buffer.end(), labelTableBlock.begin(), labelTableBlock.end());
 
         // --- Build the Relocation Table Block ---
         std::vector<uint8_t> relocationTableBlock = buildRelocationTableBlock();
-        uint32_t relocationTableOffset = static_cast<uint32_t>(buffer.size());
+        auto relocationTableOffset = static_cast<uint32_t>(buffer.size());
         buffer.insert(buffer.end(), relocationTableBlock.begin(), relocationTableBlock.end());
 
         // --- Now fill in the header fields ---
@@ -160,16 +159,16 @@ private:
     //   For each label:
     //     [Code Offset (4 bytes)] [Name Length (2 bytes)] [Name (bytes including trailing 0x00)]
     // In this version, strings are stored as zero-terminated.
-    std::vector<uint8_t> buildLabelTableBlock() const {
+    [[nodiscard]] std::vector<uint8_t> buildLabelTableBlock() const {
         std::vector<uint8_t> block;
         // Convert unordered_map to a vector of pairs sorted by label name for stable ordering.
         std::vector<std::pair<std::string, uint32_t>> labels(labelTable_.begin(), labelTable_.end());
-        std::sort(labels.begin(), labels.end(), [](const auto& a, const auto& b) {
+        std::ranges::sort(labels, [](const auto& a, const auto& b) {
             return a.first < b.first;
         });
 
         // Write label count.
-        uint32_t labelCount = static_cast<uint32_t>(labels.size());
+        auto labelCount = static_cast<uint32_t>(labels.size());
         block.push_back(static_cast<uint8_t>((labelCount >> 24) & 0xFF));
         block.push_back(static_cast<uint8_t>((labelCount >> 16) & 0xFF));
         block.push_back(static_cast<uint8_t>((labelCount >> 8) & 0xFF));
@@ -183,12 +182,6 @@ private:
             block.push_back(static_cast<uint8_t>((offset >> 16) & 0xFF));
             block.push_back(static_cast<uint8_t>((offset >> 8) & 0xFF));
             block.push_back(static_cast<uint8_t>(offset & 0xFF));
-
-            // Name with a trailing zero.
-            // The length includes the terminating zero.
-            uint16_t nameLen = static_cast<uint16_t>(entry.first.size() + 1);
-            block.push_back(static_cast<uint8_t>((nameLen >> 8) & 0xFF));
-            block.push_back(static_cast<uint8_t>(nameLen & 0xFF));
 
             // Insert the string characters.
             block.insert(block.end(), entry.first.begin(), entry.first.end());
@@ -205,7 +198,7 @@ private:
     //     [Code Offset (4 bytes)] [Reloc Type (1 byte)] [Reserved (1 byte)] [Label Index (2 bytes)]
     // In this example, we use a default relocation type of 0.
     // The label index is determined by finding the relocation entry's label in the sorted label table.
-    std::vector<uint8_t> buildRelocationTableBlock() const {
+    [[nodiscard]] std::vector<uint8_t> buildRelocationTableBlock() const {
         std::vector<uint8_t> block;
         // First, obtain the sorted labels as in the label table.
         std::vector<std::pair<std::string, uint32_t>> sortedLabels(labelTable_.begin(), labelTable_.end());
@@ -214,7 +207,7 @@ private:
         });
 
         // Write relocation entry count.
-        uint32_t relocCount = static_cast<uint32_t>(relocationEntries_.size());
+        auto relocCount = static_cast<uint32_t>(relocationEntries_.size());
         block.push_back(static_cast<uint8_t>((relocCount >> 24) & 0xFF));
         block.push_back(static_cast<uint8_t>((relocCount >> 16) & 0xFF));
         block.push_back(static_cast<uint8_t>((relocCount >> 8) & 0xFF));
@@ -242,7 +235,7 @@ private:
             if (it == sortedLabels.end()) {
                 throw std::runtime_error("Relocation entry refers to unknown label: " + reloc.label);
             }
-            uint16_t labelIndex = static_cast<uint16_t>(std::distance(sortedLabels.begin(), it));
+            auto labelIndex = static_cast<uint16_t>(std::distance(sortedLabels.begin(), it));
             block.push_back(static_cast<uint8_t>((labelIndex >> 8) & 0xFF));
             block.push_back(static_cast<uint8_t>(labelIndex & 0xFF));
         }
