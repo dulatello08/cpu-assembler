@@ -3,6 +3,7 @@
 
 #include <algorithm> // For std::reverse
 #include "code_generator.h"
+#include <chrono>
 
 //
 // Created by Dulat S on 2/13/24.
