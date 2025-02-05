@@ -4,8 +4,3 @@ _start:
 loop:
     add 1 #1
     b _start
-    b _start
-    b _start
-    b _start
-    b _start
-    b _start

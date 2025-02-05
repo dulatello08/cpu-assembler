@@ -9,15 +9,13 @@
 #include <vector>
 #include <cstdint>
 
-struct linker_config {
-    uint16_t start_label_address;
-    bool output_256_bytes_boot_sector;
-    bool output_4_kb_flash;
-};
-
 struct LabelInfo {
     std::string name;
-    uint16_t address;
+    uint32_t address;
+};
+struct RelocationInfo {
+    uint16_t absolute_index;
+    uint32_t address;
 };
 
 void print_hex_dump(const std::vector<uint8_t>& object_file);

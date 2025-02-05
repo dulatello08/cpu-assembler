@@ -21,7 +21,7 @@ specifiers
         syntax "add %rd, [%normAddressing]"
         encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
         length 7
-
+ti
 instruction sub
 opcode 0x02
 specifiers

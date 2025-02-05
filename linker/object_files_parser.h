@@ -16,11 +16,11 @@ public:
     std::vector<std::vector<uint8_t>> object_file_vectors;
     std::vector<std::string> object_files;
     std::vector<std::vector<LabelInfo>> label_info_per_file;
+    std::vector<std::vector<RelocationInfo>> relocation_info_per_file;
 
     explicit object_files_parser(const std::vector<std::string>& object_files) : object_files(object_files) {
         for (const auto& file_path : object_files) {
-            std::ifstream file_stream(file_path, std::ios::binary | std::ios::in);
-            if (file_stream.is_open()) {
+            if (std::ifstream file_stream(file_path, std::ios::binary | std::ios::in); file_stream.is_open()) {
                 // Read the contents of the file into a vector
                 std::vector<uint8_t> file_content((std::istreambuf_iterator<char>(file_stream)), std::istreambuf_iterator<char>());
                 object_file_vectors.push_back(std::move(file_content));

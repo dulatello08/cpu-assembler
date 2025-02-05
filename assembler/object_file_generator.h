@@ -55,7 +55,6 @@ public:
         buffer.resize(32, 0);
 
         // --- Append the Machine Code Blob ---
-        auto machineCodeOffset = static_cast<uint32_t>(buffer.size());
         buffer.insert(buffer.end(), machineCode_.begin(), machineCode_.end());
         auto machineCodeLength = static_cast<uint32_t>(machineCode_.size());
 
@@ -201,8 +200,8 @@ private:
     [[nodiscard]] std::vector<uint8_t> buildRelocationTableBlock() const {
         std::vector<uint8_t> block;
         // First, obtain the sorted labels as in the label table.
-        std::vector<std::pair<std::string, uint32_t>> sortedLabels(labelTable_.begin(), labelTable_.end());
-        std::sort(sortedLabels.begin(), sortedLabels.end(), [](const auto& a, const auto& b) {
+        std::vector<std::pair<std::string, uint32_t>> labels(labelTable_.begin(), labelTable_.end());
+        std::ranges::sort(labels, [](const auto& a, const auto& b) {
             return a.first < b.first;
         });
 
@@ -222,20 +221,15 @@ private:
             block.push_back(static_cast<uint8_t>((codeOffset >> 8) & 0xFF));
             block.push_back(static_cast<uint8_t>(codeOffset & 0xFF));
 
-            // Reloc Type (1 byte): default to 0.
-            block.push_back(0x00);
-            // Reserved (1 byte): 0.
-            block.push_back(0x00);
-
             // Determine label index from sortedLabels.
-            auto it = std::find_if(sortedLabels.begin(), sortedLabels.end(),
-                [&reloc](const std::pair<std::string, uint32_t>& pair) {
-                    return pair.first == reloc.label;
-                });
-            if (it == sortedLabels.end()) {
+            auto it = std::ranges::find_if(labels,
+                                           [&reloc](const std::pair<std::string, uint32_t>& pair) {
+                                               return pair.first == reloc.label;
+                                           });
+            if (it == labels.end()) {
                 throw std::runtime_error("Relocation entry refers to unknown label: " + reloc.label);
             }
-            auto labelIndex = static_cast<uint16_t>(std::distance(sortedLabels.begin(), it));
+            auto labelIndex = static_cast<uint16_t>(std::distance(labels.begin(), it));
             block.push_back(static_cast<uint8_t>((labelIndex >> 8) & 0xFF));
             block.push_back(static_cast<uint8_t>(labelIndex & 0xFF));
         }
