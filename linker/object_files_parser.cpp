@@ -8,7 +8,7 @@
 #include <sstream>
 #include <iostream>
 #include <map>
-
+#include <cstring>
 
 #if defined(__linux__) && !defined(__APPLE__)
 #include <cstdint>
