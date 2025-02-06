@@ -15,16 +15,20 @@
 #include <vector>
 #include <arpa/inet.h>  // For ntohl
 
+#include <sstream>
+#include <arpa/inet.h>  // for ntohl()
+
 void memory_layout::extract_object_codes() {
-    // For each object file...
-    for (const auto &file: object_files) {
+    // For each object file with its index.
+    for (size_t file_index = 0; file_index < object_files.size(); ++file_index) {
+        const auto &file = object_files[file_index];
         // Create a binary input stream from the raw file data.
         std::istringstream file_stream(
             std::string(file.begin(), file.end()),
             std::ios::binary
         );
 
-        // The header layout is as follows:
+        // --- Header Layout ---
         // Bytes  0-3: Magic ("LF01")
         // Bytes  4-5: Version (0x0001)
         // Bytes  6-7: Flags.
@@ -34,12 +38,12 @@ void memory_layout::extract_object_codes() {
         // Bytes 24-27: Relocation Table Offset.
         // Bytes 28-31: Metadata Offset.
         //
-        // We only need the machine code length, which is stored at offset 16.
+        // We only need the machine code length (offset 16).
 
         // Seek to byte offset 16.
         file_stream.seekg(16, std::ios::beg);
         if (!file_stream) {
-            // Handle error: could not seek to machine code length field.
+            std::cerr << "Error: Could not seek to machine code length field in file index " << file_index << std::endl;
             continue;
         }
 
@@ -47,111 +51,93 @@ void memory_layout::extract_object_codes() {
         std::uint32_t machine_code_length;
         file_stream.read(reinterpret_cast<char *>(&machine_code_length), sizeof(machine_code_length));
         if (!file_stream) {
-            // Handle error: could not read machine code length.
+            std::cerr << "Error: Could not read machine code length in file index " << file_index << std::endl;
             continue;
         }
+        // Convert from network byte order to host order.
         machine_code_length = ntohl(machine_code_length);
 
         // The machine code itself starts at offset 32.
         file_stream.seekg(32, std::ios::beg);
         if (!file_stream) {
-            // Handle error: could not seek to machine code section.
+            std::cerr << "Error: Could not seek to machine code section in file index " << file_index << std::endl;
             continue;
         }
 
-        // Read the machine code bytes into a vector.
-        std::vector<uint8_t> object_code(machine_code_length);
-        file_stream.read(reinterpret_cast<char *>(object_code.data()), machine_code_length);
+        // Read the machine code bytes into a temporary vector.
+        std::vector<uint8_t> temp_code(machine_code_length);
+        file_stream.read(reinterpret_cast<char *>(temp_code.data()), machine_code_length);
         if (!file_stream) {
-            // Handle error: incomplete machine code read.
+            std::cerr << "Error: Incomplete machine code read in file index " << file_index << std::endl;
             continue;
         }
 
-        // Store the object code.
-        object_codes.push_back(std::move(object_code));
-    }
-}
+        // Get the base offset where this file's code will be placed in the final memory buffer.
+        size_t base_offset = memory.size();
 
-std::map<std::string, std::tuple<int, int, int>> memory_layout::find_label_ranges() const {
-    std::map<std::string, std::tuple<int, int, int>> label_ranges;
+        // Append the temporary machine code directly into the unified memory buffer.
+        memory.insert(memory.end(), temp_code.begin(), temp_code.end());
 
-    // Process each file.
-    for (size_t file_index = 0; file_index < object_files.size(); ++file_index) {
-        // Retrieve the machine code length for this file.
-        // object_codes[file_index] is assumed to hold only the machine code bytes.
-        int code_length = static_cast<int>(object_codes[file_index].size());
-
-        // Get the label list for the current file.
-        // We copy it locally so we can sort it without modifying the original order.
-        std::vector<LabelInfo> labels = label_info_per_file[file_index];
-
-        // Sort labels by their address (in ascending order).
-        std::ranges::sort(labels, [](const LabelInfo &a, const LabelInfo &b) {
-            return a.address < b.address;
-        });
-
-        // For each label in the sorted list, determine its code range.
-        for (size_t i = 0; i < labels.size(); ++i) {
-            int start = static_cast<int>(labels[i].address);
-            int end = code_length; // Default for the last label.
-            if (i + 1 < labels.size()) {
-                // The next label’s address marks the end of this label's range.
-                end = static_cast<int>(labels[i + 1].address);
-            }
-            // Insert into the map.
-            // The tuple stores: (file index, start, end).
-            label_ranges[labels[i].name] = std::make_tuple(static_cast<int>(file_index), start, end);
-        }
-    }
-    return label_ranges;
-}
-
-std::map<std::string, std::vector<uint8_t> > memory_layout::extract_label_codes() {
-    std::map<std::string, std::vector<uint8_t>> label_codes;
-
-    for (const auto &[label_name, range]: label_ranges) {
-        auto [file_index, start, end] = range;
-
-        std::vector<uint8_t> code;
-        if (start <= end) {
-            code = std::vector<uint8_t>(object_codes[file_index].begin() + start,
-                                        object_codes[file_index].begin() + end);
-        } else {
-            // Extract in reverse order if start is greater than end
-            code = std::vector<uint8_t>(object_codes[file_index].rbegin() + (object_codes[file_index].size() - start),
-                                        object_codes[file_index].rbegin() + (object_codes[file_index].size() - end));
+        // Fix-up label addresses for this file:
+        // Each label's original file-relative address is updated by adding the base offset.
+        for (auto &label : label_info_per_file[file_index]) {
+            label.address += static_cast<int>(base_offset);
         }
 
-        label_codes[label_name] = std::move(code);
+        // Fix-up relocation reference addresses for this file:
+        // Each relocation's original file-relative ref_address is updated by adding the base offset.
+        for (auto &reloc : relocation_info_per_file[file_index]) {
+            reloc.address += static_cast<int>(base_offset);
+        }
     }
-
-    return label_codes;
-}
-
-
-void memory_layout::write_memory_layout() {
-
 }
 
 void memory_layout::relocate_memory_layout() {
-    // for (size_t i = 0; i < memory.size(); ++i) {
-    //     if (memory[i] == 0xea) {
-    //         if (i + 1 < memory.size()) {
-    //             uint8_t label_index = memory[i + 1];
-    //             if (label_index < label_info_per_file.size()) {
-    //                 const auto &label_info = label_info_per_file[label_index];
-    //
-    //                 auto it = label_memory_addresses.find(label_info.name);
-    //                 if (it != label_memory_addresses.end()) {
-    //                     uint16_t label_address = it->second;
-    //                     // Convert to big endian
-    //                     memory[i] = static_cast<uint8_t>((label_address >> 8) & 0xFF);
-    //                     memory[i + 1] = static_cast<uint8_t>(label_address & 0xFF);
-    //                 }
-    //             }
-    //         }
-    //         // Skip the next byte as it has already been processed
-    //         ++i;
-    //     }
-    // }
+    // Build a mapping from label name to unified address.
+    std::map<std::string, uint32_t> unified_label_map;
+    for (const auto &labels_in_file : label_info_per_file) {
+        for (const auto &label : labels_in_file) {
+            unified_label_map[label.name] = label.address;
+        }
+    }
+
+    // Iterate over each file's relocations.
+    for (const auto &relocs_in_file : relocation_info_per_file) {
+        for (const auto &reloc : relocs_in_file) {
+            // Get the symbol name using the stored label_location indices.
+            int file_index = reloc.label_location.first;
+            int label_index = reloc.label_location.second;
+            if (file_index < 0 || file_index >= static_cast<int>(label_info_per_file.size())) {
+                std::cerr << "Error: Invalid file index (" << file_index
+                          << ") in relocation entry.\n";
+                continue;
+            }
+            if (label_index < 0 || label_index >= static_cast<int>(label_info_per_file[file_index].size())) {
+                std::cerr << "Error: Invalid label index (" << label_index
+                          << ") in relocation entry for file " << file_index << ".\n";
+                continue;
+            }
+            std::string symbol = label_info_per_file[file_index][label_index].name;
+            auto it = unified_label_map.find(symbol);
+            if (it == unified_label_map.end()) {
+                std::cerr << "Error: Symbol '" << symbol
+                          << "' not found in the unified label table.\n";
+                continue;
+            }
+            uint32_t unified_address = it->second;
+
+            // Make sure we have space in memory to write 4 bytes.
+            if (reloc.address + 4 > memory.size()) {
+                std::cerr << "Error: Relocation address " << reloc.address
+                          << " is out of bounds (memory size: " << memory.size() << ").\n";
+                continue;
+            }
+
+            // Patch the 4 bytes at the relocation address with the big-endian unified address.
+            memory[reloc.address]     = (unified_address >> 24) & 0xFF;
+            memory[reloc.address + 1] = (unified_address >> 16) & 0xFF;
+            memory[reloc.address + 2] = (unified_address >> 8)  & 0xFF;
+            memory[reloc.address + 3] = (unified_address)       & 0xFF;
+        }
+    }
 }

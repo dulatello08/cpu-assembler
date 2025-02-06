@@ -16,9 +16,7 @@
 
 class memory_layout {
     std::vector<std::vector<uint8_t>> object_files;
-    std::vector<std::vector<uint8_t>> object_codes;
     std::map<std::string, std::tuple<int, int, int>> label_ranges;
-    std::map<std::string, std::vector<uint8_t>> label_codes;
     std::vector<std::vector<LabelInfo>> label_info_per_file;
     std::vector<std::vector<RelocationInfo>> relocation_info_per_file;
 public:
@@ -33,15 +31,11 @@ public:
           relocation_info_per_file(relocation_info)
     {
         extract_object_codes();
-        label_ranges = find_label_ranges();
-        label_codes = extract_label_codes();
-        print_hex_dump(label_codes["_start"]);
+        relocate_memory_layout();
+        print_hex_dump(memory);
     }
 private:
     void extract_object_codes();
-    [[nodiscard]] std::map<std::string, std::tuple<int, int, int>> find_label_ranges() const;
-    void write_memory_layout();
-    std::map<std::string, std::vector<uint8_t>> extract_label_codes();
     void relocate_memory_layout();
 };
 
