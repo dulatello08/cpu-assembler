@@ -194,8 +194,8 @@ bool object_files_parser::validate_all_files() {
             bool candidateIsExternal = false;
             if (!candidate.empty() &&
                 candidate.size() >= 3 &&
-                std::ranges::all_of(candidate, [](char c) {
-                    return std::isprint(static_cast<unsigned char>(c));
+                std::all_of(candidate.begin(), candidate.end(), [](char c) {
+                    return std::isalnum(c) || c == '_';
                 }))
             {
                 candidateIsExternal = true;
