@@ -9,6 +9,7 @@
 #include <iostream>
 #include <map>
 #include <cstring>
+#include <algorithm>
 
 #if defined(__linux__) && !defined(__APPLE__)
 #include <cstdint>
