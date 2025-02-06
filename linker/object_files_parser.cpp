@@ -194,7 +194,7 @@ bool object_files_parser::validate_all_files() {
             bool candidateIsExternal = false;
             if (!candidate.empty() &&
                 candidate.size() >= 3 &&
-                std::all_of(candidate.begin(), candidate.end(), [](char c) {
+                std::ranges::all_of(candidate, [](char c) {
                     return std::isprint(static_cast<unsigned char>(c));
                 }))
             {
@@ -231,8 +231,8 @@ bool object_files_parser::validate_all_files() {
 
     // --- Post-process relocations ---
     // For each relocation, assign its location in the 2D label table.
-    for (size_t fileIndex = 0; fileIndex < relocation_info_per_file.size(); ++fileIndex) {
-        for (auto &reloc : relocation_info_per_file[fileIndex]) {
+    for (size_t file_index = 0; file_index < relocation_info_per_file.size(); ++file_index) {
+        for (auto &reloc : relocation_info_per_file[file_index]) {
             if (reloc.is_external) {
                 // For external relocations, search all files’ label tables.
                 bool found = false;
@@ -248,7 +248,7 @@ bool object_files_parser::validate_all_files() {
                     if (found) break;
                 }
                 if (!found) {
-                    log_error("Could not match external label: " + reloc.external_label, fileIndex);
+                    log_error("Could not match external label: " + reloc.external_label, file_index);
                     // Depending on your error policy you may wish to return false here.
                 }
                 // Optionally clear the temporary external label.
@@ -257,11 +257,11 @@ bool object_files_parser::validate_all_files() {
                 // For internal relocations, the label is in the same file.
                 // Simply record the current file index and the local label index.
                 // (A bounds check here might be a good idea.)
-                if (reloc.local_index >= label_info_per_file[fileIndex].size()) {
-                    log_error("Internal relocation index out of bounds", fileIndex);
+                if (reloc.local_index >= label_info_per_file[file_index].size()) {
+                    log_error("Internal relocation index out of bounds", file_index);
                     return false;
                 }
-                reloc.label_location = {fileIndex, reloc.local_index};
+                reloc.label_location = {file_index, reloc.local_index};
             }
         }
     }

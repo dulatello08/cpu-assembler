@@ -1,5 +1,7 @@
 /.idea/
 **/*.o
+**/*.d
+**/*.tmp
 *.out
 nc16x32-as
 nc16x32-ld

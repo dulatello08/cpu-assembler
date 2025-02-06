@@ -117,7 +117,7 @@ int main(const int argc, char* argv[]) {
 
     o_files_parser->log_label_info();
 
-
+    auto memory_class = new memory_layout(o_files_parser->object_file_vectors, o_files_parser->label_info_per_file, o_files_parser->relocation_info_per_file);
     // print_hex_dump(memory_class->memory);
     //
     // std::ofstream output_file(outputFile, std::ios::binary);
@@ -130,6 +130,6 @@ int main(const int argc, char* argv[]) {
 
 
     delete o_files_parser;
-    // delete memory_class;
+    delete memory_class;
     return 0;
 }
