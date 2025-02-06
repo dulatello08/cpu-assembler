@@ -215,7 +215,7 @@ private:
 
         // Write each relocation entry.
         for (const auto& reloc : relocationEntries_) {
-            // Code offset (4 bytes).
+            // Write code offset (4 bytes).
             uint32_t codeOffset = reloc.address;
             block.push_back(static_cast<uint8_t>((codeOffset >> 24) & 0xFF));
             block.push_back(static_cast<uint8_t>((codeOffset >> 16) & 0xFF));
@@ -227,13 +227,21 @@ private:
                                            [&reloc](const std::pair<std::string, uint32_t>& pair) {
                                                return pair.first == reloc.label;
                                            });
-            if (it == labels.end()) {
-                throw std::runtime_error("Relocation entry refers to unknown label: " + reloc.label);
+            if (it != labels.end()) {
+                // Label found: write 2-byte index.
+                auto labelIndex = static_cast<uint16_t>(std::distance(labels.begin(), it));
+                block.push_back(static_cast<uint8_t>((labelIndex >> 8) & 0xFF));
+                block.push_back(static_cast<uint8_t>(labelIndex & 0xFF));
+            } else {
+                // Label not found: external relocation.
+                // Write the external label as a null-terminated string.
+                for (char c : reloc.label) {
+                    block.push_back(static_cast<uint8_t>(c));
+                }
+                block.push_back(0); // Null terminator.
             }
-            auto labelIndex = static_cast<uint16_t>(std::distance(labels.begin(), it));
-            block.push_back(static_cast<uint8_t>((labelIndex >> 8) & 0xFF));
-            block.push_back(static_cast<uint8_t>(labelIndex & 0xFF));
         }
+
         return block;
     }
 };

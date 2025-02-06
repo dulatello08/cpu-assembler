@@ -35,20 +35,8 @@ public:
     ~object_files_parser() = default;
 
     bool validate_all_files();
-    void pre_relocate_all_files();
 
-    void log_label_info() const {
-        size_t absolute_index = 0; // Initialize the absolute index
-        for (size_t file_index = 0; file_index < label_info_per_file.size(); ++file_index) {
-            std::cout << "File: " << object_files[file_index] << std::endl;
-            const auto& labels = label_info_per_file[file_index];
-            for (const auto& label : labels) {
-                std::cout << "  Label: " << label.name << ", Address: " << label.address << ", Absolute Index: " << absolute_index << std::endl;
-                ++absolute_index; // Increment the absolute index for each label
-            }
-        }
-    }
-
+    void log_label_info() const;
 
 private:
     void log_error(const std::string& message, size_t file_index) const {

@@ -115,29 +115,21 @@ int main(const int argc, char* argv[]) {
 
     o_files_parser->validate_all_files();
 
-    o_files_parser->pre_relocate_all_files();
     o_files_parser->log_label_info();
 
-    std::vector<LabelInfo> label_info_per_file_flat;
 
-    for (const auto& inner_vector : o_files_parser->label_info_per_file) {
-        label_info_per_file_flat.insert(label_info_per_file_flat.end(), inner_vector.begin(), inner_vector.end());
-    }
-
-    auto memory_class = new memory_layout(o_files_parser->object_file_vectors, label_info_per_file_flat);
-
-    print_hex_dump(memory_class->memory);
-
-    std::ofstream output_file(outputFile, std::ios::binary);
-    if (output_file.is_open()) {
-        output_file.write(reinterpret_cast<const char*>(memory_class->memory.data()), static_cast<std::streamsize>(memory_class->memory.size()));
-        output_file.close();
-    } else {
-        std::cerr << "Failed to open file: " << outputFile << std::endl;
-    }
+    // print_hex_dump(memory_class->memory);
+    //
+    // std::ofstream output_file(outputFile, std::ios::binary);
+    // if (output_file.is_open()) {
+    //     output_file.write(reinterpret_cast<const char*>(memory_class->memory.data()), static_cast<std::streamsize>(memory_class->memory.size()));
+    //     output_file.close();
+    // } else {
+    //     std::cerr << "Failed to open file: " << outputFile << std::endl;
+    // }
 
 
     delete o_files_parser;
-    delete memory_class;
+    // delete memory_class;
     return 0;
 }
