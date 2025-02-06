@@ -118,15 +118,14 @@ int main(const int argc, char* argv[]) {
     o_files_parser->log_label_info();
 
     auto memory_class = new memory_layout(o_files_parser->object_file_vectors, o_files_parser->label_info_per_file, o_files_parser->relocation_info_per_file);
-    // print_hex_dump(memory_class->memory);
-    //
-    // std::ofstream output_file(outputFile, std::ios::binary);
-    // if (output_file.is_open()) {
-    //     output_file.write(reinterpret_cast<const char*>(memory_class->memory.data()), static_cast<std::streamsize>(memory_class->memory.size()));
-    //     output_file.close();
-    // } else {
-    //     std::cerr << "Failed to open file: " << outputFile << std::endl;
-    // }
+
+    std::ofstream output_file(outputFile, std::ios::binary);
+    if (output_file.is_open()) {
+        output_file.write(reinterpret_cast<const char*>(memory_class->memory.data()), static_cast<std::streamsize>(memory_class->memory.size()));
+        output_file.close();
+    } else {
+        std::cerr << "Failed to open file: " << outputFile << std::endl;
+    }
 
 
     delete o_files_parser;
