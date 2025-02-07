@@ -21,7 +21,7 @@ specifiers
         syntax "add %rd, [%normAddressing]"
         encoding [sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]
         length 7
-ti
+
 instruction sub
 opcode 0x02
 specifiers
@@ -140,6 +140,10 @@ specifiers
     sp 00
         syntax "mov %rd, #%immediate"
         encoding [sp(8)] [opcode(8)] [rd(8)] [immediate(16)]
+        length 5
+    sp 00
+        syntax "mov %rd, %rn, #%immediate"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [immediate(32)]
         length 5
     sp 01
         syntax "mov %rd, %rn"

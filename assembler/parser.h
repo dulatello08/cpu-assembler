@@ -36,6 +36,9 @@ public:
           metadata(std::move(metadata)),
           code_generator(code_generator) {
     }
+
+    void parse_data_definition();
+
     void parse();
     void parse_instruction();
 

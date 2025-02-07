@@ -342,7 +342,7 @@ const Token* CodeGenerator::find_token_for_field(const std::string &field_name,
     }
     else if (field_name == "normAddressing") {
         for (const auto &kv : placeholder_map) {
-            if (kv.second.subtype == OperandSubtype::Memory)
+            if ((kv.second.subtype == OperandSubtype::Memory) || kv.second.subtype == OperandSubtype::LabelReference)
                 return &kv.second;
         }
     }

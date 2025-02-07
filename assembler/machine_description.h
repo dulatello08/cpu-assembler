@@ -73,6 +73,7 @@ static const InstructionSpecifier rsh_specs[] = {
 
 static const InstructionSpecifier mov_specs[] = {
     {0, "mov %rd, #%immediate", "[sp(8)] [opcode(8)] [rd(8)] [immediate(16)]", 5},
+    {0, "mov %rd, %rn, #%immediate", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [immediate(32)]", 5},
     {1, "mov %rd, %rn", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)]", 4},
     {2, "mov %rd.L, [%normAddressing]", "[sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]", 7},
     {3, "mov %rd.H, [%normAddressing]", "[sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]", 7},
@@ -122,7 +123,7 @@ static const InstructionFormat instructions[] = {
     {"xor", 0x06, 3, xor_specs},
     {"lsh", 0x07, 3, lsh_specs},
     {"rsh", 0x08, 3, rsh_specs},
-    {"mov", 0x09, 18, mov_specs},
+    {"mov", 0x09, 19, mov_specs},
     {"b", 0x0A, 1, b_specs},
     {"be", 0x0B, 1, be_specs},
     {"bne", 0x0C, 1, bne_specs},

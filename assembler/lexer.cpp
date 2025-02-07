@@ -102,10 +102,9 @@ std::vector<Token> Lexer::secondPass(const std::vector<std::string>& lines) {
     std::vector<Token> tokens;
     std::regex labelDef(R"(^\s*([A-Za-z_]\w*):\s*$)");
     std::regex instructionDef(R"(^[A-Za-z_]\w*$)");
-    std::regex tokenRegex(R"((\[.*?\])|([^,\s]+))");
+    std::regex tokenRegex(R"((\"[^\"]*\")|(\'.*?\')|(\[.*?\])|([^,\s]+))");
 
-    for (size_t i = 0; i < lines.size(); ++i) {
-        std::string rawLine = lines[i];
+    for (auto rawLine : lines) {
         auto commentPos = rawLine.find(';');
         if (commentPos != std::string::npos) {
             rawLine.erase(commentPos);
@@ -136,12 +135,18 @@ std::vector<Token> Lexer::secondPass(const std::vector<std::string>& lines) {
         while (iter != end) {
             std::string thisToken;
             if ((*iter)[1].matched) {
-                thisToken = (*iter)[1];
-            } else {
-                thisToken = (*iter)[2];
+                thisToken = (*iter)[1].str(); // Double-quoted string literal.
+            } else if ((*iter)[2].matched) {
+                thisToken = (*iter)[2].str(); // Single-quoted string literal.
+            } else if ((*iter)[3].matched) {
+                thisToken = (*iter)[3].str(); // Bracketed operand.
+            } else if ((*iter)[4].matched) {
+                thisToken = (*iter)[4].str(); // Regular token.
             }
-            trim(thisToken);
 
+            trim(thisToken);  // Trim leading/trailing whitespace
+
+            // Process the token as before:
             if (firstTokenOfLine) {
                 if (std::regex_match(thisToken, instructionDef)) {
                     Token t;

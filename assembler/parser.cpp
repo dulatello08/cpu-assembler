@@ -8,6 +8,15 @@
 #include "assembler.h"
 #include <sstream>
 
+static inline void trim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }));
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+}
+
 void Parser::parse() {
     currentTokenIndex = 0;
 
@@ -18,6 +27,10 @@ void Parser::parse() {
             // Skip labels, assuming they're handled elsewhere.
             label_address_table[current_token.data] = object_code.size();
             currentTokenIndex++;
+        }
+        else if (current_token.type == TokenType::Instruction && current_token.data == "db") {
+            parse_data_definition();
+            continue;
         }
         else if (current_token.type == TokenType::Instruction) {
             try {
@@ -142,11 +155,49 @@ bool Parser::placeholder_matches_token(const std::string &placeholder, const Tok
         return (token.subtype == OperandSubtype::Immediate);
     }
     else if (placeholder.find("[%normAddressing]") != std::string::npos) {
-        return (token.subtype == OperandSubtype::Memory);
+        return (token.subtype == OperandSubtype::Memory ||
+                token.subtype == OperandSubtype::LabelReference);
     }
     else if (placeholder.find("%label") != std::string::npos) {
         return (token.subtype == OperandSubtype::LabelReference);
     }
 
     return false;
+}
+
+void Parser::parse_data_definition() {
+    // Assume the current token is the "db" directive.
+    // Move past the directive token.
+    currentTokenIndex++;
+
+    // Process all subsequent tokens that are operands.
+    while (currentTokenIndex < tokens.size() && tokens[currentTokenIndex].type == TokenType::Operand) {
+        const Token &operandToken = tokens[currentTokenIndex];
+        std::string op = operandToken.data;
+        trim(op); // Remove any leading/trailing whitespace
+
+        // Check if the operand is a string literal (quoted with " or ')
+        if (op.size() >= 2 &&
+            ((op.front() == '"' && op.back() == '"') || (op.front() == '\'' && op.back() == '\''))) {
+            // Remove the surrounding quotes.
+            std::string asciiString = op.substr(1, op.size() - 2);
+            // Append each character as a byte.
+            for (char ch : asciiString) {
+                object_code.push_back(static_cast<uint8_t>(ch));
+            }
+            } else {
+                // Otherwise, assume the operand is a numeric literal.
+                try {
+                    // std::stoi supports decimal and hexadecimal (if prefixed with "0x")
+                    int value = std::stoi(op, nullptr, 0);
+                    if (value < 0 || value > 0xFF) {
+                        throw std::runtime_error("Data byte value out of range: " + op);
+                    }
+                    object_code.push_back(static_cast<uint8_t>(value));
+                } catch (const std::exception &e) {
+                    std::cerr << "Error parsing data byte '" << op << "': " << e.what() << "\n";
+                }
+            }
+        currentTokenIndex++;
+    }
 }
