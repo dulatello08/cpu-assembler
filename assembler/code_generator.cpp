@@ -336,7 +336,7 @@ const Token* CodeGenerator::find_token_for_field(const std::string &field_name,
     }
     else if (field_name == "immediate" || field_name == "operand2") {
         for (const auto &kv : placeholder_map) {
-            if (kv.second.subtype == OperandSubtype::Immediate)
+            if (kv.second.subtype == OperandSubtype::Immediate  || kv.second.subtype == OperandSubtype::LabelReference)
                 return &kv.second;
         }
     }
