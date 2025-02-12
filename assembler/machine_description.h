@@ -73,7 +73,7 @@ static const InstructionSpecifier rsh_specs[] = {
 
 static const InstructionSpecifier mov_specs[] = {
     {0, "mov %rd, #%immediate", "[sp(8)] [opcode(8)] [rd(8)] [immediate(16)]", 5},
-    {1, "mov %rd, %rn, %label", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [label(32)]", 5},
+    {1, "mov %rd, %rn, %label", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [label(32)]", 8},
     {2, "mov %rd, %rn", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)]", 4},
     {3, "mov %rd.L, [%normAddressing]", "[sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]", 7},
     {4, "mov %rd.H, [%normAddressing]", "[sp(8)] [opcode(8)] [rd(8)] [normAddressing(32)]", 7},

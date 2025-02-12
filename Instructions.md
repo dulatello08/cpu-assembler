@@ -150,34 +150,105 @@
 ---
 
 ### Instruction: mov
-**Opcode:** 0x00
+**Opcode:** 0x09
 
 **General Description:** Move data between registers and memory with various widths and addressing modes, as determined by the specifier.
 
 **Specifiers:**
 - **0x00**: Move immediate into rd(any width, 16 or 8). Syntax: `mov 1, #0x1234`
-- **0x01**: Move (copy) rd to rn (full width, 16). Syntax: `mov 1, 2`
-- **0x02**: Move 8-bit value from memory (normAddressing) to rd.L. Syntax: `mov 1.L, [0x2000]`
-- **0x03**: Move 8-bit value from memory (normAddressing) to rd.H. Syntax: `mov 1.H, [0x2001]`
-- **0x04**: Move 16-bit value from memory (normAddressing) to rd. Syntax: `mov 1, [0x3000]`
-- **0x05**: Move 32-bit value from memory (normAddressing) into rd (upper 16 bits) and rn1 (lower 16 bits). Syntax: `mov 1, 2, [0x4000]`
-- **0x06**: Move 8-bit value from rd.L to memory (normAddressing). Syntax: `mov [0x5000], 1.L`
-- **0x07**: Move 8-bit value from rd.H to memory (normAddressing). Syntax: `mov [0x5001], 1.H`
-- **0x08**: Move 16-bit value from rd to memory (normAddressing). Syntax: `mov [0x6000], 1`
-- **0x09**: Move 32-bit value from rd (upper 16 bits) and rn1 (lower 16 bits) to memory (normAddressing). Syntax: `mov [0x7000], 1, 2`
-- **0x0A**: Move 8-bit value from memory (rn + Offset) to rd.L. Syntax: `mov 1.L, [3 + 0x10]`
-- **0x0B**: Move 8-bit value from memory (rn + Offset) to rd.H. Syntax: `mov 1.H, [3 + 0x10]`
-- **0x0C**: Move 16-bit value from memory (rn + Offset) to rd. Syntax: `mov 1, [3 + 0x20]`
-- **0x0D**: Move 32-bit value from memory (rn + Offset) to rd and rn1. Syntax: `mov 1, 2, [3 + 0x30]`
-- **0x0E**: Move 8-bit value from rd.L to memory (rn + Offset). Syntax: `mov [3 + 0x40], 1.L`
-- **0x0F**: Move 8-bit value from rd.H to memory (rn + Offset). Syntax: `mov [3 + 0x40], 1.H`
-- **0x10**: Move 16-bit value from rd to memory (rn + Offset). Syntax: `mov [3 + 0x50], 1`
-- **0x11**: Move 32-bit value from rd and rn1 to memory (rn + Offset). Syntax: `mov [3 + 0x60], 1, 2`
-
-**Operands:**
+- **0x01**: Move 32 bit immediate into rd and rn. Syntax: `mov 1, 2 #0xDEADBEEF` or `mov 1, 2 label`
+- **0x02**: Move (copy) rd to rn (full width, 16). Syntax: `mov 1, 2`
+- **0x03**: Move 8-bit value from memory (normAddressing) to rd.L. Syntax: `mov 1.L, [0x2000]`
+- **0x04**: Move 8-bit value from memory (normAddressing) to rd.H. Syntax: `mov 1.H, [0x2001]`
+- **0x05**: Move 16-bit value from memory (normAddressing) to rd. Syntax: `mov 1, [0x3000]`
+- **0x06**: Move 32-bit value from memory (normAddressing) into rd (upper 16 bits) and rn1 (lower 16 bits). Syntax: `mov 1, 2, [0x4000]`
+- **0x07**: Move 8-bit value from rd.L to memory (normAddressing). Syntax: `mov [0x5000], 1.L`
+- **0x08**: Move 8-bit value from rd.H to memory (normAddressing). Syntax: `mov [0x5001], 1.H`
+- **0x09**: Move 16-bit value from rd to memory (normAddressing). Syntax: `mov [0x6000], 1`
+- **0x0A**: Move 32-bit value from rd (upper 16 bits) and rn1 (lower 16 bits) to memory (normAddressing). Syntax: `mov [0x7000], 1, 2`
+- **0x0B**: Move 8-bit value from memory (rn + Offset) to rd.L. Syntax: `mov 1.L, [3 + 0x10]`
+- **0x0C**: Move 8-bit value from memory (rn + Offset) to rd.H. Syntax: `mov 1.H, [3 + 0x10]`
+- **0x0D**: Move 16-bit value from memory (rn + Offset) to rd. Syntax: `mov 1, [3 + 0x20]`
+- **0x0E**: Move 32-bit value from memory (rn + Offset) to rd and rn1. Syntax: `mov 1, 2, [3 + 0x30]`
+- **0x0F**: Move 8-bit value from rd.L to memory (rn + Offset). Syntax: `mov [3 + 0x40], 1.L`
+- **0x10**: Move 8-bit value from rd.H to memory (rn + Offset). Syntax: `mov [3 + 0x40], 1.H`
+- **0x11**: Move 16-bit value from rd to memory (rn + Offset). Syntax: `mov [3 + 0x50], 1`
+- **0x12**: Move 32-bit value from rd and rn1 to memory (rn + Offset). Syntax: `mov [3 + 0x60], 1, 2`
+  **Operands:**
 - **rd** (8-bit): Destination or source register depending on the specifier.
 - **rn** (8-bit): Used as a base register with offset in specifiers 0x0A–0x11.
 - **rn1** (8-bit): Secondary register used in 32-bit operations (specifiers 0x05, 0x09, 0x0D, 0x11).
 - **normAddressing** (32-bit): Base memory address used in specifiers 0x02–0x09.
 
 ---
+
+### Instruction: b
+**Opcode:** 0x0A
+
+**General Description:** Unconditional branch.
+
+**Specifiers:**
+- **00**: Syntax: `b label`
+
+**Operands:**
+- **label** (32-bit): Branch target address.
+
+---
+
+### Instruction: be
+**Opcode:** 0x0B
+
+**General Description:** Branch if equal.
+
+**Specifiers:**
+- **00**: Syntax: `be rd, rn, label`
+
+**Operands:**
+- **rd** (8-bit): First register for comparison.
+- **rn** (8-bit): Second register for comparison.
+- **label** (32-bit): Branch target address.
+
+---
+
+### Instruction: bne
+**Opcode:** 0x0C
+
+**General Description:** Branch if not equal.
+
+**Specifiers:**
+- **00**: Syntax: `bne rd, rn, label`
+
+**Operands:**
+- **rd** (8-bit): First register for comparison.
+- **rn** (8-bit): Second register for comparison.
+- **label** (32-bit): Branch target address.
+
+---
+
+### Instruction: blt
+**Opcode:** 0x0D
+
+**General Description:** Branch if less than.
+
+**Specifiers:**
+- **00**: Syntax: `blt rd, rn, label`
+
+**Operands:**
+- **rd** (8-bit): First register for comparison.
+- **rn** (8-bit): Second register for comparison.
+- **label** (32-bit): Branch target address.
+
+---
+
+### Instruction: bgt
+**Opcode:** 0x0E
+
+**General Description:** Branch if greater than.
+
+**Specifiers:**
+- **00**: Syntax: `bgt rd, rn, label`
+
+**Operands:**
+- **rd** (8-bit): First register for comparison.
+- **rn** (8-bit): Second register for comparison.
+- **label** (32-bit): Branch target address.
