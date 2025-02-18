@@ -1,40 +1,38 @@
-;------------------------------------------------------------
-; Euclid's GCD Algorithm (Revised)
-;------------------------------------------------------------
-; Description:
-;   Computes the GCD of two 16-bit numbers using Euclid's
-;   algorithm. The computed GCD (in R3) is then copied to R5,
-;   which is passed to convert_hex.
-;
-; Registers used:
-;   R1 - temporary for remainder computation
-;   R2 - constant zero (0)
-;   R3 - holds current 'a'
-;   R4 - holds current 'b'
-;   R5 - will receive the final GCD for conversion
-;
-gcd:
-    mov 3, #0xaaaa      ; R3 <- 0xAAAA
-    mov 4, #0xffff      ; R4 <- 0xFFFF
-    mov 2, #0           ; R2 <- 0
+; fixed_mul:
+;   16.16 fixed-point multiply.
+;   Computes: result ≈ ( (A_hi * B_hi) << 16 ) + (A_hi * B_lo) + (A_lo * B_hi)
+;   Input:  A in R5:R6, B in R7:R8.
+;   Output: result in R5:R6.
+;   Note: Ignores the high 16 bits of (A_lo*B_lo). For many cases this is acceptable.
+;   Uses: R13, R14, R15 as temporaries.
 
-gcd_loop:
-    mov 1, 3           ; R1 <- R3, copy 'a' into R1 for modulo calculation
+fixed_mul:
+    ; --- Compute temp1 = A_hi * B_hi ---
+    mov 15, 5           ; R15 ← A_hi (from R5)
+    mul 15, 7, 01       ; R15 ← R15 * B_hi (R7), mode 01
 
-gcd_mod:
-    blt 1, 4, mod_done ; if R1 (remainder) < R4 then we're done subtracting
-    sub 1, 4           ; R1 = R1 - R4
-    b gcd_mod         ; repeat until R1 < R4
+    ; --- Compute temp2 = A_hi * B_lo ---
+    mov 14, 5           ; R14 ← A_hi (from R5)
+    mul 14, 8, 01       ; R14 ← R14 * B_lo (R8), mode 01
 
-mod_done:
-    mov 4, 3          ; R3 <- R4, new 'a' becomes old 'b'
-    mov 1, 4          ; R4 <- R1, new 'b' becomes computed remainder
-    be 4, 2, gcd_done ; if R4 == 0, branch to gcd_done
-    b gcd_loop        ; otherwise, continue with next iteration
+    ; --- Compute temp3 = A_lo * B_hi ---
+    mov 13, 6           ; R13 ← A_lo (from R6)
+    mul 13, 7, 01       ; R13 ← R13 * B_hi (R7), mode 01
 
-gcd_done:
-    mov 3, 5          ; (Spec 0x02) Copy R3 (GCD) into R5
-    b convert_hex     ; Branch to convert_hex to output the hex value
+    ; --- Assemble the result ---
+    ; The high product (temp1) becomes the high 16 bits of our result.
+    mov 5, 15           ; R5 ← temp1
+    ; Clear the low word of the result.
+    mov 6, #0           ; R6 ← 0
 
-log_return:
+    ; Add temp2 and temp3 into the lower half.
+    add 6, 14, 01       ; R6 ← R6 + temp2
+    add 6, 13, 01       ; R6 ← R6 + temp3
+
+    ; (Optionally, one might include the contribution of (A_lo*B_lo)>>16,
+    ;  but with our current mul instruction that would require extra work.)
+
+    b end_fixed_mul
+
+end_fixed_mul:
     nop
