@@ -113,6 +113,22 @@ static const InstructionSpecifier bgt_specs[] = {
     {0, "bgt %rd, %rn, %label", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [label(32)]", 8},
 };
 
+static const InstructionSpecifier bro_specs[] = {
+    {0, "bro %label", "[sp(8)] [opcode(8)] [label(32)]", 6},
+};
+
+static const InstructionSpecifier umull_specs[] = {
+    {0, "umull %rd, %rn, %rn1", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [rn1(8)]", 5},
+};
+
+static const InstructionSpecifier smull_specs[] = {
+    {0, "smull %rd, %rn, %rn1", "[sp(8)] [opcode(8)] [rd(8)] [rn(8)] [rn1(8)]", 5},
+};
+
+static const InstructionSpecifier hlt_specs[] = {
+    {0, "hlt", "[sp(8)] [opcode(8)]", 2},
+};
+
 static const InstructionFormat instructions[] = {
     {"nop", 0x00, 1, nop_specs},
     {"add", 0x01, 3, add_specs},
@@ -129,6 +145,10 @@ static const InstructionFormat instructions[] = {
     {"bne", 0x0C, 1, bne_specs},
     {"blt", 0x0D, 1, blt_specs},
     {"bgt", 0x0E, 1, bgt_specs},
+    {"bro", 0x0F, 1, bro_specs},
+    {"umull", 0x10, 1, umull_specs},
+    {"smull", 0x11, 1, smull_specs},
+    {"hlt", 0x12, 1, hlt_specs},
 };
 
 #endif // INSTRUCTIONS_H

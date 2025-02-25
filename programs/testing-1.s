@@ -18,12 +18,12 @@
 ;   control returns properly.
 ;------------------------------------------------------------
 
-print_log:
-    mov 1.L, [10 + 0x00]    ; Load 8-bit char from address in R10 into R1.L
-    be 1, 0, log_return     ; If R1 equals 0 (null terminator), branch to log_return
-    mov [0x10000], 1.L      ; Output the character to UART
-    add 10, #1              ; Increment pointer in R10
-    b print_log             ; Loop back to print the next character
+;print_log:
+;    mov 1.L, [10 + 0x00]    ; Load 8-bit char from address in R10 into R1.L
+;    be 1, 0, log_return     ; If R1 equals 0 (null terminator), branch to log_return
+;    mov [0x10000], 1.L      ; Output the character to UART
+;    add 10, #1              ; Increment pointer in R10
+;    b print_log             ; Loop back to print the next character
 
 ;------------------------------------------------------------
 ; Hexadecimal Conversion Subroutine

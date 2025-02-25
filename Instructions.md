@@ -44,7 +44,7 @@
 ### Instruction: mul
 **Opcode:** 0x03
 
-**General Description:** Multiply two 16-bit values. Warning: output is truncated 16 bit number.
+**General Description:** Multiply two 16-bit values. Warning: output truncated 16 bit number.
 
 **Specifiers:**
 - **00**: mode 00, multiply rd by immediate 16-bit value (operand 2). Leave rn empty. 3-word length.
@@ -52,8 +52,8 @@
 - **02**: mode 02, multiply rd by value at address of normAddressing. 3-word length.
 
 **Operands:**
-- **rd** (8-bit): In specifiers 00, 01, 02, it is the destination for the multiply operation and the first operand.
-- **rn** (8-bit): In specifier 00 not used, in 01 is the source multiplier, in 02 not used.
+- **rd** (8-bit): In specifiers 00, 01, 02, it is the destination for the multiply operation and the multiplicand.
+- **rn** (8-bit): In specifier 00 not used, in 01 is the source multiplier, in 02 not used. in 03, is both a multiplier and product.
 - **operand 2** (16-bit): In specifier 00, it is the immediate value to multiply with rd.
 - **normAddressing** (32-bit): In specifier 02, it is the address from which the value is read and multiplied with rd.
 
@@ -252,3 +252,58 @@
 - **rd** (8-bit): First register for comparison.
 - **rn** (8-bit): Second register for comparison.
 - **label** (32-bit): Branch target address.
+
+---
+
+### Instruction: bro
+**Opcode:** 0x0F
+
+**General Description:** Branch if overflow is set.
+
+**Specifiers:**
+- **00**: Syntax: `bro label`
+
+**Operands:**
+- **label** (32-bit): Branch target address.
+
+---
+
+### Instruction: umull
+**Opcode:** 0x10
+
+**General Description:** Performs an **unsigned** 16-bit multiplication. Stores the **lower 16 bits** of the result in `rd` and the **upper 16 bits** in `rn1`. 2-word length.
+
+**Specifiers:**
+- **00**: mode 00, multiply `rd` and `rn`, store **lower** result in `rd`, **upper** in `rn1`. Syntax: `umull rd, rn1, rn`
+
+**Operands:**
+- **rd** (8-bit): Destination register for the **lower** 16 bits of the result.
+- **rn1** (8-bit): Destination register for the **upper** 16 bits of the result.
+- **rn** (8-bit): Register holding the second multiplicand.
+
+---
+
+### Instruction: smull
+**Opcode:** 0x11
+
+**General Description:** Performs a **signed** 16-bit multiplication. Stores the **lower 16 bits** of the result in `rd` and the **upper 16 bits** in `rn1`. 2-word length.
+
+**Specifiers:**
+- **00**: mode 00, multiply `rd` and `rn`, store **lower** result in `rd`, **upper** in `rn1`. Syntax: `smull rd, rn1, rn`
+
+**Operands:**
+- **rd** (8-bit): Destination register for the **lower** 16 bits of the result.
+- **rn1** (8-bit): Destination register for the **upper** 16 bits of the result.
+- **rn** (8-bit): Register holding the second multiplicand.
+
+---
+
+### Instruction: hlt
+**Opcode:** 0x12
+
+**General Description:** Stops execution immediately. The CPU enters a halted state until reset.
+
+**Specifiers:**
+- **00**: mode 00, halt execution. 2-word length.
+
+**Operands:** None.

@@ -253,3 +253,35 @@ specifiers
         syntax "bgt %rd, %rn, %label"
         encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [label(32)]
         length 8
+
+instruction bro
+opcode 0x0F
+specifiers
+    sp 00
+        syntax "bro %label"
+        encoding [sp(8)] [opcode(8)] [label(32)]
+        length 6
+
+instruction umull
+opcode 0x10
+specifiers
+    sp 00
+        syntax "umull %rd, %rn, %rn1"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [rn1(8)]
+        length 5
+
+instruction smull
+opcode 0x11
+specifiers
+    sp 00
+        syntax "smull %rd, %rn, %rn1"
+        encoding [sp(8)] [opcode(8)] [rd(8)] [rn(8)] [rn1(8)]
+        length 5
+
+instruction hlt
+opcode 0x12
+specifiers
+    sp 00
+        syntax "hlt"
+        encoding [sp(8)] [opcode(8)]
+        length 2
