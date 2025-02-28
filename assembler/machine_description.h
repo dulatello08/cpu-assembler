@@ -129,6 +129,14 @@ static const InstructionSpecifier hlt_specs[] = {
     {0, "hlt", "[sp(8)] [opcode(8)]", 2},
 };
 
+static const InstructionSpecifier psh_specs[] = {
+    {0, "psh %rd", "[sp(8)] [opcode(8)] [rd(8)]", 3},
+};
+
+static const InstructionSpecifier pop_specs[] = {
+    {0, "pop %rd", "[sp(8)] [opcode(8)] [rd(8)]", 3},
+};
+
 static const InstructionFormat instructions[] = {
     {"nop", 0x00, 1, nop_specs},
     {"add", 0x01, 3, add_specs},
@@ -149,6 +157,8 @@ static const InstructionFormat instructions[] = {
     {"umull", 0x10, 1, umull_specs},
     {"smull", 0x11, 1, smull_specs},
     {"hlt", 0x12, 1, hlt_specs},
+    {"psh", 0x13, 1, psh_specs},
+    {"pop", 0x14, 1, pop_specs},
 };
 
 #endif // INSTRUCTIONS_H
