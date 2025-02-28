@@ -42,7 +42,7 @@ _start:
     ;-------------------------------------------
     ; Final product (16.16) is in R12:R13.
     ; Move the lower 16 bits (R13) into R5 for printing.
-    mov 13, 5
+    mov 12, 5
 
     ; Branch to external function that converts to hex and prints R5.
     b convert_hex
@@ -51,7 +51,7 @@ log_return:
     mov 1, #0
     bne 0, 1 actual_return
     add 0, #1
-    mov 2, 5
+    mov 13, 5
     b convert_hex
 
 actual_return:
