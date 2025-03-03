@@ -274,7 +274,7 @@
 **General Description:** Performs an **unsigned** 16-bit multiplication. Stores the **lower 16 bits** of the result in `rd` and the **upper 16 bits** in `rn1`. 2-word length.
 
 **Specifiers:**
-- **00**: mode 00, multiply `rd` and `rn`, store **lower** result in `rd`, **upper** in `rn1`. Syntax: `umull rd, rn1, rn`
+- **00**: mode 00, multiply `rd` and `rn`, store **lower** result in `rd`, **upper** in `rn1`. Syntax: `umull r1, r2, r3`
 
 **Operands:**
 - **rd** (8-bit): Destination register for the **lower** 16 bits of the result.
@@ -289,7 +289,7 @@
 **General Description:** Performs a **signed** 16-bit multiplication. Stores the **lower 16 bits** of the result in `rd` and the **upper 16 bits** in `rn1`. 2-word length.
 
 **Specifiers:**
-- **00**: mode 00, multiply `rd` and `rn`, store **lower** result in `rd`, **upper** in `rn1`. Syntax: `smull rd, rn1, rn`
+- **00**: mode 00, multiply `rd` and `rn`, store **lower** result in `rd`, **upper** in `rn1`. Syntax: `smull r1, r2, r3`
 
 **Operands:**
 - **rd** (8-bit): Destination register for the **lower** 16 bits of the result.
@@ -331,3 +331,29 @@
 
 **Operands:**
 - **rd** (8-bit): The register where the popped value will be stored.
+
+---
+
+### Instruction: jsr
+**Opcode:** 0x15
+
+**General Description:** Jump to subroutine. This instruction saves the return address (the address of the next instruction) onto the stack and branches to the specified subroutine address.
+
+**Specifiers:**
+- **00**: Syntax: `jsr label`
+
+**Operands:**
+- **label** (32-bit): The entry point address of the subroutine.
+
+---
+
+### Instruction: rts
+**Opcode:** 0x16
+
+**General Description:** Return from subroutine. This instruction retrieves the previously saved return address from the stack and transfers control back to that address.
+
+**Specifiers:**
+- **00**: Syntax: `rts`
+
+**Operands:**
+- *None.*
