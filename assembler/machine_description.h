@@ -137,6 +137,14 @@ static const InstructionSpecifier pop_specs[] = {
     {0, "pop %rd", "[sp(8)] [opcode(8)] [rd(8)]", 3},
 };
 
+static const InstructionSpecifier jsr_specs[] = {
+    {0, "jsr %label", "[sp(8)] [opcode(8)] [label(32)]", 6},
+};
+
+static const InstructionSpecifier rts_specs[] = {
+    {0, "rts", "[sp(8)] [opcode(8)]", 2},
+};
+
 static const InstructionFormat instructions[] = {
     {"nop", 0x00, 1, nop_specs},
     {"add", 0x01, 3, add_specs},
@@ -159,6 +167,8 @@ static const InstructionFormat instructions[] = {
     {"hlt", 0x12, 1, hlt_specs},
     {"psh", 0x13, 1, psh_specs},
     {"pop", 0x14, 1, pop_specs},
+    {"jsr", 0x15, 1, jsr_specs},
+    {"rts", 0x16, 1, rts_specs},
 };
 
 #endif // INSTRUCTIONS_H
