@@ -165,9 +165,20 @@ void Parser::parse_data_definition() {
         const Token &operandToken = tokens[currentTokenIndex];
         std::string op = operandToken.data;
         trim(op); // Remove any leading/trailing whitespace
-
+        if (operandToken.subtype == OperandSubtype::LabelReference) {
+            // Insert a dummy 32-bit placeholder (0) into the object code.
+            uint32_t dummy = 0;
+            // Record the current position so the relocation entry can patch this later.
+            auto patch_position = static_cast<uint32_t>(object_code.size());
+            object_code.push_back(static_cast<uint8_t>((dummy >> 24) & 0xFF));
+            object_code.push_back(static_cast<uint8_t>((dummy >> 16) & 0xFF));
+            object_code.push_back(static_cast<uint8_t>((dummy >> 8) & 0xFF));
+            object_code.push_back(static_cast<uint8_t>(dummy & 0xFF));
+            // Record a relocation entry (assume relocation_entries is available)
+            this->code_generator.relocation_entries.emplace_back(op, patch_position);
+        }
         // Check if the operand is a string literal (quoted with " or ')
-        if (op.size() >= 2 &&
+        else if (op.size() >= 2 &&
             ((op.front() == '"' && op.back() == '"') || (op.front() == '\'' && op.back() == '\''))) {
             // Remove the surrounding quotes.
             std::string asciiString = op.substr(1, op.size() - 2);

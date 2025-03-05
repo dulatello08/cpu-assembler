@@ -1,6 +1,17 @@
 _start:
-    mov 5, #12
+    mov 1,2, ivt
+    mov [0x20002], 2
+    mov 5, #1
     mov [0x20004] 5
-    hlt
+
+loop:
+    nop
+    nop
+    b loop
+
 ivt:
-    db 0x
+    db label
+
+label:
+    nop
+    hlt
