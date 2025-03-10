@@ -145,6 +145,10 @@ static const InstructionSpecifier rts_specs[] = {
     {0, "rts", "[sp(8)] [opcode(8)]", 2},
 };
 
+static const InstructionSpecifier wfi_specs[] = {
+    {0, "wfi", "[sp(8)] [opcode(8)]", 2},
+};
+
 static const InstructionFormat instructions[] = {
     {"nop", 0x00, 1, nop_specs},
     {"add", 0x01, 3, add_specs},
@@ -169,6 +173,7 @@ static const InstructionFormat instructions[] = {
     {"pop", 0x14, 1, pop_specs},
     {"jsr", 0x15, 1, jsr_specs},
     {"rts", 0x16, 1, rts_specs},
+    {"wfi", 0x17, 1, wfi_specs},
 };
 
 #endif // INSTRUCTIONS_H

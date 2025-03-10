@@ -317,3 +317,11 @@ specifiers
         syntax "rts"
         encoding [sp(8)] [opcode(8)]
         length 2
+
+instruction wfi
+opcode 0x17
+specifiers
+    sp 00
+        syntax "wfi"
+        encoding [sp(8)] [opcode(8)]
+        length 2
