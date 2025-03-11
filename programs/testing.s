@@ -10,6 +10,13 @@ loop:
     b loop
 command_entered:
     mov 10, #0
+    mov 0, 11, help
+    jsr strcmp
+    mov 0, #0
+    be 0, 5, handle_help
+    hlt
+handle_help:
+    mov 0, 10, helloworld
     jsr print_log
     hlt
 ivt:
@@ -21,14 +28,8 @@ type:
     mov [2 + 0xD0000], 5.L
     add 2, #1
     rts
-;type_cont:
-;    mov 0, 10, helloworld
-;    jsr print_log
-;    rts
-;    mov 0, 10, helloworld
-;    mov 0, 11, helloworld1
-;    jsr strcmp
-;    jsr convert_hex
-;    hlt
-;help:
-;    db "help", 0
+
+help:
+    db "help", 0
+helloworld:
+    db "Hello, World!", 0
