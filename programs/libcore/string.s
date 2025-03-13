@@ -156,3 +156,40 @@ print_newline:
     mov [0x10000], 5.L
     pop 5
     rts
+
+
+;------------------------------------------------------------
+; Subroutine: strcmp
+; Description:
+;   Compares two null-terminated strings (pointed to by R10 and R11).
+;   Returns in R5:
+;       0  if the strings are equal,
+;      -1  if the first non-matching character in s1 is less than that in s2,
+;      +1  if the first non-matching character in s1 is greater than that in s2.
+;------------------------------------------------------------
+strcmp:
+    mov 3, #0           ; Set R3 to 0 (for null-check comparisons)
+strcmp_loop:
+    mov 1.L, [10 + 0x0000] ; Load 8-bit character from s1 (R10) into R1.L
+    mov 2.L, [11 + 0x1000] ; Load 8-bit character from s2 (R11) into R2.L
+    be 1, 2, check_null ; If R1 equals R2, branch to check for null terminator
+    blt 1, 2, ret_negative ; If R1 < R2, branch to return negative result
+    bgt 1, 2, ret_positive ; If R1 > R2, branch to return positive result
+
+check_null:
+    be 1, 3, ret_zero   ; If current character equals 0 (null terminator), return 0
+    add 10, #1          ; Increment pointer in R10 (advance s1)
+    add 11, #1          ; Increment pointer in R11 (advance s2)
+    b strcmp_loop       ; Loop back to compare next characters
+
+ret_negative:
+    mov 5, #0xFFFF      ; Set R5 to 0xFFFF (represents -1 in 16-bit two's complement)
+    rts                 ; Return from subroutine
+
+ret_positive:
+    mov 5, #1           ; Set R5 to +1
+    rts                 ; Return from subroutine
+
+ret_zero:
+    mov 5, #0           ; Set R5 to 0
+    rts                 ; Return from subroutine
