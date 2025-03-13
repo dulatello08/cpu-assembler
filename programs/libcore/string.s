@@ -1,5 +1,5 @@
 ; minimal hex-only atoi()
-; Input:  r1 points to a null-terminated hex string (uppercase only)
+; Input:  r0 points to a null-terminated hex string (uppercase only)
 ; Output: r3 holds the converted value
 ; Note: Only 16-bit results are valid due to mul truncation
 
@@ -7,11 +7,12 @@ atoi_hex:
     psh 2            ; preserve r2
     psh 5            ; preserve r5
     psh 6            ; preserve r6
+    mov 2, #0
 
     mov 3, #0       ; initialize r3 (result) to 0
 
 loop:
-    mov 2.L, [1 + 0x1000]   ; load byte from address in r1 into r2
+    mov 2.L, [0 + 0x1000]   ; load byte from address in r1 into r2
     mov 5, #0          ; r5 = 0
     be 2, 5, done     ; if r2 == 0 (null terminator), branch to done
 
@@ -31,7 +32,7 @@ letter:
 
 add_digit:
     add 3, 2      ; add digit value in r2 to r3
-    add 1, #1     ; advance pointer r1 to next character
+    add 0, #1     ; advance pointer r1 to next character
     b loop        ; repeat the loop
 
 done:
@@ -57,19 +58,25 @@ done:
 ; Returns:
 ;   The buffer pointed to by R0 is filled with the input string (null-terminated).
 kgets:
-    mov 1, #0xd
+    psh 0
+    psh 5
+    mov 1, #0xa
 kgets_l:
     wfi
-    b kgets
+    b kgets_l
 kgets_1:
     pop 1
     pop 1
+    mov 1, #0
+    mov [0 + 0x1000], 1.L
+    pop 5
+    pop 0
     rts
 type_isr:
     mov 5.L, [0x10001]
-    mov [0x10000], 5.L
     be 1, 5, kgets_1
     mov [0 + 0x1000], 5.L
+    mov [0x10000], 5.L
     add 0, #1
     rts
 
@@ -81,7 +88,7 @@ type_isr:
 ;   hexadecimal ASCII representation. For each nibble:
 ;     - The nibble is isolated.
 ;     - If the nibble is ≥ 10, 7 is added (to jump from '9' to 'A').
-;     - 0x30 is added to convert it into an ASCII digit.
+;     - 0x30 is added  to convert it into an ASCII digit.
 ;     - The resulting 8-bit value is sent to UART at 0x10000.
 ;   After outputting 4 characters, execution branches to log_return.
 ;
@@ -135,4 +142,17 @@ CH4_SKIP:
     mov [0x10000], 1.L
     pop 2
     pop 1
+    rts
+
+
+;------------------------------------------------------------
+; Print newline Subroutine
+;------------------------------------------------------------
+print_newline:
+    psh 5
+    mov 5, #0x0A
+    mov [0x10000], 5.L
+    mov 5, #0x0D
+    mov [0x10000], 5.L
+    pop 5
     rts
