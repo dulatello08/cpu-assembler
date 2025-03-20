@@ -1,9 +1,11 @@
 _start:
+    wfi
     mov 1, 2, ivt
     mov [0x20002], 2
     mov 5, #1
     mov [0x20004], 5
     mov 0, 10, exit
+    jsr print_blue
 main:
     mov 0, #0
     mov 5, #0
@@ -16,12 +18,15 @@ main:
     jsr print_newline
     mov 3, 5
     rsh 5, #4
+    jsr print_red
     jsr convert_hex
+    jsr print_blue
     jsr print_newline
     b main
 handle_exit:
     hlt
 ivt:
     db type_isr
+
 exit:
     db "exit", 0
